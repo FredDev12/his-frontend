@@ -190,7 +190,7 @@ Ce projet est sous licence [MIT](LICENSE). Voir le fichier LICENSE pour plus de 
 
 ## Auteurs
 
-- [@FredDev12] - Développement initial
+- [@FredDev12](https://github.com/FredDev12) - Développement initial
 
 ## Remerciements
 
