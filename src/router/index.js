@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from "vue-router"
+import { createRouter, createWebHistory } from "vue-router"
 
 import Login from "../pages/auth/Login.vue"
 import Dashboard from "../pages/dashboard/Dashboard.vue"
@@ -56,7 +56,7 @@ children:[
 ]
 
 const router = createRouter({
-history: createWebHashHistory("/his-frontend/"),
+history: createWebHistory("/his-frontend/"),
 routes
 })
 
