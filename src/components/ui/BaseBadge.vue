@@ -5,7 +5,11 @@ const props = defineProps({
 type:{
 type:String,
 default:"primary"
-}
+},
+size: {
+    type: String,
+    default: "md" // md ou sm
+  }
 
 })
 
@@ -18,13 +22,18 @@ warning:"bg-yellow-100 text-yellow-700"
 
 }
 
+const sizes = {
+  sm: "px-1.5 py-0.5 text-xs",
+  md: "px-2 py-1 text-xs"
+}
+
 </script>
 
 <template>
 
 <span
-class="px-2 py-1 rounded text-xs"
-:class="colors[type]"
+class="rounder font-medium inline-flex items-center"
+:class="[colors[type], sizes[size]]"
 >
 
 <slot/>

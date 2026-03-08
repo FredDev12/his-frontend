@@ -20,3 +20,4 @@ api.get(`/agents/function/${fonction}`)
 
 export const getAgentStats = () =>
 api.get("/agents/statistiques")
+
