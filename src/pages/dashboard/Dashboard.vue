@@ -308,7 +308,7 @@ const greeting = computed(() => {
         
         <div v-else class="space-y-4">
           <div v-for="log in recentLogs" :key="log.id" class="flex items-start gap-3">
-            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
               <span>{{ log.success ? '✅' : '❌' }}</span>
             </div>
             <div class="flex-1">

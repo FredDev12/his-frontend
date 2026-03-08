@@ -366,8 +366,8 @@ const formatIpAddress = (ip) => {
         </BaseCard>
         
         <!-- Onglet Historique -->
-        <BaseCard v-if="activeTab === 'logs'" class="flex flex-col h-[600px]">
-          <div class="flex items-center justify-between mb-4 flex-shrink-0">
+        <BaseCard v-if="activeTab === 'logs'" class="flex flex-col h-150">
+          <div class="flex items-center justify-between mb-4 shrink-0">
             <h2 class="text-lg font-semibold">Historique des connexions</h2>
             
             <BaseButton
@@ -433,7 +433,7 @@ const formatIpAddress = (ip) => {
             </div>
           </div>
           <!-- Pied de page avec compteur -->
-          <div class="mt-4 pt-2 border-t text-xs text-gray-500 flex-shrink-0">
+          <div class="mt-4 pt-2 border-t text-xs text-gray-500 shrink-0">
             Total: {{ auth.loginLogs.length }} connexion(s)
           </div>
         </BaseCard>

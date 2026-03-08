@@ -28,35 +28,56 @@ const props = defineProps({
     type: String,
     default: "off",
   },
+  showPasswordToggle: {
+    type: Boolean,
+    default: false
+  }
 })
 
-const emit = defineEmits(["update:modelValue", "blur", "focus", "keydown"])
+const emit = defineEmits(["update:modelValue", "blur", "focus", "keydown", "toggle-password"])
 
 const onInput = (e) => {
   emit("update:modelValue", e.target.value)
 }
+
+const togglePassword = () => {
+  emit("toggle-password")
+}
+
 </script>
 
 <template>
   <div class="space-y-1">
-    <label v-if="label" class="text-sm text-gray-600">
+    <label v-if="label" class="text-sm font-medium text-gray-700">
       {{ label }}
     </label>
 
-    <input
-      :type="type"
-      :value="modelValue"
-      :placeholder="placeholder"
-      :disabled="disabled"
-      :autocomplete="autocomplete"
-      class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
-      @input="onInput"
-      @blur="$emit('blur', $event)"
-      @focus="$emit('focus', $event)"
-      @keydown="$emit('keydown', $event)"
-    />
+    <div class="relative">
+      <input
+        :type="type"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :autocomplete="autocomplete"      
+        class="w-full border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100 transition"
+        :class="{ 'border-red-500': error }"
+        @input="onInput"
+        @blur="$emit('blur', $event)"
+        @focus="$emit('focus', $event)"
+        @keydown="$emit('keydown', $event)"
+      />
 
-    <p v-if="error" class="text-xs text-red-600">
+      <button
+        v-if="showPasswordToggle"
+        type="button"
+        @click="togglePassword"
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+      >
+        <span>{{ type === 'password' ? '👁️' : '👁️‍🗨️' }}</span>
+      </button>
+    </div>
+
+    <p v-if="error" class="text-xs text-red-600 mt-1">
       {{ error }}
     </p>
   </div>
