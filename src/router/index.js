@@ -56,7 +56,7 @@ children:[
 ]
 
 const router = createRouter({
-history: createWebHistory("/his-frontend/"),
+history: createWebHistory(),
 routes
 })
 

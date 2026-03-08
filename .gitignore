@@ -16,6 +16,14 @@ build/
 coverage/
 
 # =========================
+# Configuration files
+# =========================
+.firebase
+*.log
+.firebaserc
+
+
+# =========================
 # Environment variables
 # =========================
 .env
