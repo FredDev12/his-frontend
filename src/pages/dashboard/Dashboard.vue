@@ -144,7 +144,7 @@ const formatDate = (dateString) => {
 
 // Navigation
 const goToReception = () => router.push("/reception")
-const goToFiches = () => router.push("/reception/fiches")
+const goToFiches = () => router.push("/fiches")
 const goToProfile = () => router.push("/profile")
 
 // Charger au montage

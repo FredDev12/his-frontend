@@ -1,20 +1,26 @@
 <script setup>
-
+import { ref } from "vue"
 import Sidebar from "../components/layout/Sidebar.vue"
 import Topbar from "../components/layout/Topbar.vue"
 import Breadcrumb from "../components/ui/Breadcrumb.vue";
 
+const isSidebarCollapsed = ref(false)
+
+// Écouter les changements de la sidebar
+const onSidebarToggle = (collapsed) => {
+  isSidebarCollapsed.value = collapsed
+}
 </script>
 
 <template>
 
-<div class="flex h-screen overflow-hidden">
+<div class="flex h-screen overflow-hidden bg-gray-50">
 
-<Sidebar/>
+<Sidebar @toggle="onSidebarToggle" />
 
-<div class="flex-1 flex flex-col overflow-hidden">
+<div class="flex-1 flex flex-col overflow-hidden transition-all duration-300">
 
-<Topbar/>
+<Topbar :sidebar-collapsed="isSidebarCollapsed" />
 
 <!-- Breadcrumb fixe -->
       <div class="px-4 py-3 bg-white border-b">
@@ -22,7 +28,7 @@ import Breadcrumb from "../components/ui/Breadcrumb.vue";
       </div>
 
       <!-- Contenu scrollable -->
-      <main class="flex-1 overflow-y-auto bg-gray-50">
+      <main class="flex-1 overflow-y-auto">
         <div class="p-5">
           <router-view />
         </div>

@@ -52,14 +52,11 @@ const submit = async () => {
   
   loading.value = true
   try {
-    // Simulation d'appel API (à remplacer par votre vrai login)
-    await new Promise(resolve => setTimeout(resolve, 1000))
     
-    // TODO: Remplacer par votre vrai login
-    // await auth.login({
-    //   email: email.value,
-    //   password: password.value
-    // })
+    await auth.login({
+       email: email.value,
+       password: password.value
+     })
     
     toast.add("Connexion réussie !", "success")
     router.push("/")
