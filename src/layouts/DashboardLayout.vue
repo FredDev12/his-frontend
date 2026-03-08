@@ -3,6 +3,7 @@
 import Sidebar from "../components/layout/Sidebar.vue"
 import Topbar from "../components/layout/Topbar.vue"
 import router from "../router";
+import Breadcrumb from "../components/ui/Breadcrumb.vue";
 
 </script>
 
@@ -12,13 +13,18 @@ import router from "../router";
 
 <Sidebar/>
 
-<div class="flex-1">
+<div class="flex-1 flex flex-col">
 
 <Topbar/>
 
+<main class="flex-1 p-6">
+  <Breadcrumb/>
+
+  <router-view/>
+</main>
+
 <div class="p-6">
 
-<router-view/>
 
 </div>
 

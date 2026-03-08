@@ -83,7 +83,7 @@ const load = async () => {
 onMounted(load)
 watch(() => route.params.id, load)
 
-const back = () => router.push({ name: "reception.fiches.list" })
+const back = () => router.push({ name: "fiches.list" })
 </script>
 <template>
   <div class="p-6 space-y-5">
@@ -288,7 +288,7 @@ const back = () => router.push({ name: "reception.fiches.list" })
               Nouvelle admission (réception)
             </BaseButton>
 
-            <BaseButton variant="secondary" @click="router.push({ name: 'reception.fiches.list' })">
+            <BaseButton variant="secondary" @click="router.push({ name: 'fiches.list' })">
               Retour liste des fiches
             </BaseButton>
           </div>

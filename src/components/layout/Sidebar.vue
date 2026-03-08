@@ -14,6 +14,11 @@ const logout = async () => {
     router.push("/login" )
   }
 }
+
+const profile = () => {
+  router.push("/profile")
+}
+
 </script>
 
 <template>
@@ -22,13 +27,19 @@ const logout = async () => {
       <h2 class="font-bold text-lg">HIS</h2>
 
       <nav class="flex flex-col gap-2 text-sm">
-        <router-link to="/" class="hover:text-blue-600">
+        <router-link to="/" class="hover:text-blue-600" active-class="text-blue-600 font-medium">
           Dashboard
         </router-link>
 
-        <router-link to="/reception" class="hover:text-blue-600">
+        <router-link to="/reception" class="hover:text-blue-600" active-class="text-blue-600 font-medium">
           Réception
         </router-link>
+
+        <router-link to="/fiches" class="hover:text-blue-600" active-class="text-blue-600 font-medium">
+          Fiches de patient
+        </router-link>
+        
+        
       </nav>
     </div>
 
@@ -37,6 +48,11 @@ const logout = async () => {
       <div class="text-xs text-gray-500 mb-2">
         Connecté: <span class="font-medium">{{ auth.user?.prenom || "-" }}</span>
       </div>
+
+      <!-- Lien rapide vers profil -->
+      <BaseButton @click="profile"  variant="primary" class="w-full justify-center block text-xs text-blue-600 mb-2">
+        Voir mon profil
+      </BaseButton>
 
       <BaseButton variant="danger" class="w-full justify-center" @click="logout">
         Déconnexion

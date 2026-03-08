@@ -50,7 +50,7 @@ const filtered = computed(() => {
 })
 
 const openDetail = (id) => {
-  router.push({ name: "reception.fiches.detail", params: { id } })
+  router.push({ name: "fiches.detail", params: { id } })
 }
 </script>
 

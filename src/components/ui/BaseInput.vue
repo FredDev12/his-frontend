@@ -24,6 +24,10 @@ const props = defineProps({
     type: String,
     default: "",
   },
+  autocomplete: {
+    type: String,
+    default: "off",
+  },
 })
 
 const emit = defineEmits(["update:modelValue", "blur", "focus", "keydown"])
@@ -44,6 +48,7 @@ const onInput = (e) => {
       :value="modelValue"
       :placeholder="placeholder"
       :disabled="disabled"
+      :autocomplete="autocomplete"
       class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
       @input="onInput"
       @blur="$emit('blur', $event)"

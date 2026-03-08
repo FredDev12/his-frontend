@@ -267,7 +267,7 @@ watch(patientType, (val) => {
           </p>
           <BaseButton
             variant="secondary"
-            @click="$router.push({ name: 'reception.fiches.list' })"
+            @click="$router.push({ name: 'fiches.list' })"
             >
             Voir toutes les fiches
           </BaseButton>

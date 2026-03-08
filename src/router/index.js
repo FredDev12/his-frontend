@@ -3,9 +3,9 @@ import { createRouter, createWebHistory } from "vue-router"
 import Login from "../pages/auth/Login.vue"
 import Dashboard from "../pages/dashboard/Dashboard.vue"
 import ReceptionPatient from "../pages/reception/ReceptionPatient.vue"
-import ReceptionFichesList from "../pages/reception/ReceptionFichesList.vue"
-import ReceptionFicheDetail from "../pages/reception/ReceptionFicheDetail.vue"
-
+import FichesList from "../pages/fiches/FichesList.vue"
+import FicheDetail from "../pages/fiches/FicheDetail.vue"
+import Profile from "../pages/profile/Profile.vue"
 
 import AuthLayout from "../layouts/AuthLayout.vue"
 import DashboardLayout from "../layouts/DashboardLayout.vue"
@@ -29,27 +29,38 @@ children:[
 {
     path: "/",
     component: DashboardLayout,
-    meta:{ requiresAuth:true },
+    meta:{ requiresAuth:true, breadcrumb:"Tableau de bord" },
     children:[
         {
             path: "",
-            component: Dashboard
+            component: Dashboard,
+            meta:{ breadcrumb:"Accueil" }
+            
         },
         {
             path: "/reception",
-            component: ReceptionPatient
+            component: ReceptionPatient,
+            meta:{ breadcrumb:"Réception" }
         },
         {
-            path: "/reception/fiches",
-            name: "reception.fiches.list",
-            component: ReceptionFichesList
+            path: "/fiches",
+            name: "fiches.list",
+            component: FichesList,
+            meta:{ breadcrumb:"Fiches de patient" }
         },
         {
-            path: "/reception/fiches/:id",
-            name: "reception.fiches.detail",
-            component: ReceptionFicheDetail,
-            props: true
-        }
+            path: "/fiches/:id",
+            name: "fiches.detail",
+            component: FicheDetail,
+            props: true,
+            meta:{ breadcrumb:"Détail de la fiche" }
+        },
+        {
+        path: "/profile",
+        name: "profile",
+        component: Profile,
+        meta:{ breadcrumb:"Profil" }
+      }
     ]
 },
 

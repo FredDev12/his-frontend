@@ -32,3 +32,20 @@ border:1px solid var(--color-border);
 border-radius:10px;
 padding:20px;
 }
+
+/* Breadcrumb animations */
+.breadcrumb-enter-active,
+.breadcrumb-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.breadcrumb-enter-from,
+.breadcrumb-leave-to {
+  opacity: 0;
+}
+
+/* Style pour les séparateurs */
+.breadcrumb-separator {
+  color: #9ca3af;
+  margin: 0 0.5rem;
+}
