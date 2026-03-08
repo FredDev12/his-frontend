@@ -9,16 +9,19 @@ L'application utilise une architecture modulaire avec des composants réutilisab
 ## Fonctionnalités
 
 ### Authentification
+
 - Connexion sécurisée des utilisateurs
 - Protection des routes avec des gardes d'authentification
 
 ### Tableau de Bord
+
 - Vue d'ensemble avec des statistiques clés :
   - Nombre de patients aujourd'hui
   - Urgences
   - Consultations
 
 ### Module Réception
+
 - **Sélection du type de patient** : Public ou Agent
 - **Recherche de patients** : Recherche rapide et intelligente des patients existants
 - **Recherche d'agents** : Pour les patients de type "Agent"
@@ -28,10 +31,12 @@ L'application utilise une architecture modulaire avec des composants réutilisab
 - **Gestion des fiches** : Liste des fiches de réception et détails
 
 ### Composants UI Réutilisables
+
 - Boutons, badges, cartes, tableaux, inputs, etc.
 - Loader global et système de notifications (toast)
 
 ### API Integration
+
 - Intégration avec un backend via Axios pour :
   - Gestion des patients (CRUD, recherche)
   - Gestion des agents
@@ -49,76 +54,78 @@ L'application utilise une architecture modulaire avec des composants réutilisab
 
 ## Structure du Projet
 
-```
-src/
-├── api/                    # Modules API pour les appels backend
-│   ├── agents.api.js       # API pour les agents
-│   ├── auth.api.js         # API pour l'authentification
-│   ├── axios.js            # Configuration Axios
-│   └── patients.api.js     # API pour les patients
-├── assets/                 # Ressources statiques (images, etc.)
-├── components/             # Composants réutilisables
-│   ├── HelloWorld.vue      # Composant d'exemple
-│   ├── layout/             # Composants de mise en page
-│   │   ├── Sidebar.vue     # Barre latérale
-│   │   └── Topbar.vue      # Barre supérieure
-│   └── ui/                 # Composants UI de base
-│       ├── BaseBadge.vue
-│       ├── BaseButton.vue
-│       ├── BaseCard.vue
-│       ├── BaseInput.vue
-│       ├── BaseTable.vue
-│       ├── GlobalLoader.vue
-│       └── ToastHost.vue
-├── layouts/                # Layouts de page
-│   ├── AuthLayout.vue      # Layout pour l'authentification
-│   └── DashboardLayout.vue # Layout pour le tableau de bord
-├── modules/                # Modules métier
-│   └── reception/          # Module réception
-│       ├── components/     # Composants spécifiques à la réception
-│       │   ├── AgentRelationSelector.vue
-│       │   ├── AgentResultCard.vue
-│       │   ├── AgentSearch.vue
-│       │   ├── FastPatientSearch.vue
-│       │   ├── FichePayment.vue
-│       │   ├── PatientForm.vue
-│       │   ├── PatientSearch.vue
-│       │   ├── PatientsTable.vue
-│       │   └── PatientTypeSelector.vue
-│       └── services/       # Services métier
-│           └── reception.service.js
-├── pages/                  # Pages de l'application
-│   ├── auth/
-│   │   └── Login.vue       # Page de connexion
-│   ├── dashboard/
-│   │   └── Dashboard.vue   # Page tableau de bord
-│   └── reception/          # Pages réception
-│       ├── ReceptionFicheDetail.vue
-│       ├── ReceptionFichesList.vue
-│       └── ReceptionPatient.vue
-├── router/                 # Configuration du routage
-│   └── index.js
-├── stores/                 # Stores Pinia pour la gestion d'état
-│   ├── auth.store.js       # Store authentification
-│   ├── loader.store.js     # Store loader
-│   ├── reception.store.js  # Store réception
-│   └── toast.store.js      # Store notifications
-├── utilis/                 # Utilitaires
-│   └── auth.js             # Utilitaires d'authentification
-├── App.vue                 # Composant racine
-├── main.js                 # Point d'entrée de l'application
-└── style.css               # Styles globaux
-```
+   ```md
+   src/
+   ├── api/                    # Modules API pour les appels backend
+   │   ├── agents.api.js       # API pour les agents
+   │   ├── auth.api.js         # API pour l'authentification
+   │   ├── axios.js            # Configuration Axios
+   │   └── patients.api.js     # API pour les patients
+   ├── assets/                 # Ressources statiques (images, etc.)
+   ├── components/             # Composants réutilisables
+   │   ├── HelloWorld.vue      # Composant d'exemple
+   │   ├── layout/             # Composants de mise en page
+   │   │   ├── Sidebar.vue     # Barre latérale
+   │   │   └── Topbar.vue      # Barre supérieure
+   │   └── ui/                 # Composants UI de base
+   │       ├── BaseBadge.vue
+   │       ├── BaseButton.vue
+   │       ├── BaseCard.vue
+   │       ├── BaseInput.vue
+   │       ├── BaseTable.vue
+   │       ├── GlobalLoader.vue
+   │       └── ToastHost.vue
+   ├── layouts/                # Layouts de page
+   │   ├── AuthLayout.vue      # Layout pour l'authentification
+   │   └── DashboardLayout.vue # Layout pour le tableau de bord
+   ├── modules/                # Modules métier
+   │   └── reception/          # Module réception
+   │       ├── components/     # Composants spécifiques à la réception
+   │       │   ├── AgentRelationSelector.vue
+   │       │   ├── AgentResultCard.vue
+   │       │   ├── AgentSearch.vue
+   │       │   ├── FastPatientSearch.vue
+   │       │   ├── FichePayment.vue
+   │       │   ├── PatientForm.vue
+   │       │   ├── PatientSearch.vue
+   │       │   ├── PatientsTable.vue
+   │       │   └── PatientTypeSelector.vue
+   │       └── services/       # Services métier
+   │           └── reception.service.js
+   ├── pages/                  # Pages de l'application
+   │   ├── auth/
+   │   │   └── Login.vue       # Page de connexion
+   │   ├── dashboard/
+   │   │   └── Dashboard.vue   # Page tableau de bord
+   │   └── reception/          # Pages réception
+   │       ├── ReceptionFicheDetail.vue
+   │       ├── ReceptionFichesList.vue
+   │       └── ReceptionPatient.vue
+   ├── router/                 # Configuration du routage
+   │   └── index.js
+   ├── stores/                 # Stores Pinia pour la gestion d'état
+   │   ├── auth.store.js       # Store authentification
+   │   ├── loader.store.js     # Store loader
+   │   ├── reception.store.js  # Store réception
+   │   └── toast.store.js      # Store notifications
+   ├── utilis/                 # Utilitaires
+   │   └── auth.js             # Utilitaires d'authentification
+   ├── App.vue                 # Composant racine
+   ├── main.js                 # Point d'entrée de l'application
+   └── style.css               # Styles globaux
+   ```
 
 ## Installation
 
 1. **Cloner le dépôt** :
+
    ```bash
    git clone https://github.com/FredDev12/his-frontend.git
    cd HIS
    ```
 
 2. **Installer les dépendances** :
+
    ```bash
    npm install
    ```
@@ -130,20 +137,27 @@ src/
 ## Utilisation
 
 ### Développement
+
 Pour lancer le serveur de développement :
+
 ```bash
 npm run dev
 ```
+
 L'application sera accessible sur `http://localhost:5173` (port par défaut de Vite).
 
 ### Build pour la Production
+
 Pour construire l'application pour la production :
+
 ```bash
 npm run build
 ```
 
 ### Prévisualisation du Build
+
 Pour prévisualiser le build de production :
+
 ```bash
 npm run preview
 ```
@@ -157,21 +171,27 @@ npm run preview
 ## Architecture
 
 ### Gestion d'État
+
 L'application utilise Pinia pour la gestion d'état centralisée :
+
 - **auth.store.js** : Gestion de l'état d'authentification
 - **loader.store.js** : Gestion du loader global
 - **reception.store.js** : Gestion de l'état du module réception
 - **toast.store.js** : Gestion des notifications toast
 
 ### Routage
+
 Le routage est géré par Vue Router avec des layouts :
+
 - Routes publiques : `/login`
 - Routes protégées : `/`, `/reception`, `/reception/fiches`, etc.
 
 ### API
+
 Les appels API sont centralisés dans le dossier `api/` avec Axios comme client HTTP.
 
 ### Composants
+
 - **Layouts** : Structures de page réutilisables
 - **UI Components** : Composants de base pour l'interface
 - **Module Components** : Composants spécifiques aux fonctionnalités métier
