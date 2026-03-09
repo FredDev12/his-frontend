@@ -8,8 +8,8 @@ import { setupErrorHandler } from './utils/errorHandler'
 
 import "./style.css"
 
-setupErrorFilter()
-setupErrorHandler()
+//setupErrorFilter()
+//setupErrorHandler()
 
 const app = createApp(App)
 

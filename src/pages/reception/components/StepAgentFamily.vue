@@ -10,7 +10,8 @@ const props = defineProps({
   typedChildName: String,
   existingMatches: Array,
   checkingExisting: Boolean,
-  openingPatient: Boolean
+  openingPatient: Boolean,
+  patientType:String
 })
 
 console.log("StepAgentFamily props:", props.selectedAgent, props.selectedPatient, props.relation, props.typedChildName, props.existingMatches)
@@ -21,7 +22,8 @@ const emit = defineEmits([
   "handlePatient", 
   "forceCreateNew",
   "next",
-  "update:typedChildName"  // Pour le v-model
+  "update:typedChildName",
+  "patientType"
 ])
 </script>
 

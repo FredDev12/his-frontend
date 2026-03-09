@@ -2,11 +2,12 @@
 import PatientTypeSelector from "../../../modules/reception/components/PatientTypeSelector.vue"
 import BaseButton from "../../../components/ui/BaseButton.vue"
 
-defineProps({
+const props = defineProps({
   patientType: String
 })
 
 const emit = defineEmits(["update:patientType", "next"])
+console.log("step type patient type", props.patientType)
 </script>
 
 <template>

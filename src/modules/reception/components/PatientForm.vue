@@ -7,6 +7,7 @@ import { useReceptionStore } from "../../../stores/reception.store"
 import BaseInput from "../../../components/ui/BaseInput.vue"
 import BaseButton from "../../../components/ui/BaseButton.vue"
 import BaseBadge from "../../../components/ui/BaseBadge.vue"
+import RadioGroup from "../../../components/ui/RadioGroup.vue"
 
 const toast = useToastStore()
 const reception = useReceptionStore()
@@ -25,7 +26,7 @@ const saving = ref(false)
 const typePassageOptions = [
   { value: "NEW", label: "Nouvelle admission" },
   { value: "CONSULTATION", label: "Consultation" },
-  { value: "HOSPITALISATION", label: "Hospitalisation" },
+  { value: "REFERE", label: "Référé" },
   { value: "URGENCE", label: "Urgence" },
   { value: "RENDEZ_VOUS", label: "Rendez-vous" }
 ]
@@ -33,18 +34,37 @@ const typePassageOptions = [
 const prioriteOptions = [
   { value: "ROUTINE", label: "Routine", color: "blue" },
   { value: "URGENT", label: "Urgent", color: "orange" },
-  { value: "TRES_URGENT", label: "Très urgent", color: "red" },
-  { value: "VITALE", label: "Vitale", color: "purple" }
+  //{ value: "TRES_URGENT", label: "Très urgent", color: "red" },
+  //{ value: "VITALE", label: "Vitale", color: "purple" }
 ]
 
 const serviceOptions = [
-  { value: "medecine_interne", label: "Médecine interne", icon: "🏥" },
-  { value: "pediatrie", label: "Pédiatrie", icon: "👶" },
-  { value: "gyneco_obstetrique", label: "Gynéco-obstétrique", icon: "👩" },
-  { value: "chirurgie", label: "Chirurgie", icon: "🔪" },
-  { value: "cardiologie", label: "Cardiologie", icon: "❤️" },
-  { value: "radiologie", label: "Radiologie", icon: "📡" },
-  { value: "laboratoire", label: "Laboratoire", icon: "🔬" }
+  // Médecine
+  { value: "medecine_interne", label: "Médecine interne", icon: "🏥", category: "medical" },
+  { value: "pediatrie", label: "Pédiatrie", icon: "👶", category: "medical" },
+  { value: "cardiologie", label: "Cardiologie", icon: "❤️", category: "medical" },
+  
+  // Chirurgie
+  { value: "chirurgie", label: "Chirurgie", icon: "🔪", category: "surgery" },
+  { value: "gyneco_obstetrique", label: "Gynéco-obstétrique", icon: "👩", category: "surgery" },
+  
+  // Imagerie
+  { value: "radiologie", label: "Radiologie", icon: "📡", category: "imaging" },
+  { value: "scanner", label: "Scanner", icon: "🖥️", category: "imaging" },
+  { value: "imagerie", label: "Imagerie", icon: "📷", category: "imaging" },
+  
+  // Laboratoire
+  { value: "laboratoire", label: "Laboratoire", icon: "🔬", category: "lab" },
+  { value: "biochimie", label: "Biochimie", icon: "🧪", category: "lab" },
+  { value: "hematologie", label: "Hématologie", icon: "🩸", category: "lab" },
+  { value: "parasitologie", label: "Parasitologie", icon: "🦠", category: "lab" },
+  { value: "bacteriologie", label: "Bactériologie", icon: "🧫", category: "lab" },
+  { value: "serologie", label: "Sérologie", icon: "💉", category: "lab" },
+  { value: "immunologie", label: "Immunologie", icon: "🛡️", category: "lab" },
+  
+  // Consultations
+  { value: "cpn_cpon", label: "CPN, CPON", icon: "🤰", category: "consultation" },
+  { value: "vaccin", label: "Vaccin", icon: "💊", category: "consultation" }
 ]
 
 // Champs API Patients
@@ -56,6 +76,11 @@ const age = ref("")
 const telephone = ref("")
 const adresse = ref("")
 const urgence = ref(false)
+
+const sexeOptions = [
+  { value: 'M', label: 'Masculin', icon: '👨', color: 'blue' },
+  { value: 'F', label: 'Féminin', icon: '👩', color: 'pink' }
+]
 
 // Champs supplémentaires
 const typePassage = ref(reception.draft?.typePassage || "NEW")
@@ -271,6 +296,8 @@ const submit = async () => {
     saving.value = false
   }
 }
+
+console.log("patient type", props.patientType)
 </script>
 
 <template>
@@ -357,6 +384,7 @@ const submit = async () => {
         </div>
 
         <!-- Service d'entrée -->
+         <!--
         <div>
           <label class="text-sm font-medium text-gray-600 mb-1.5 block">
             Service d'entrée
@@ -370,7 +398,7 @@ const submit = async () => {
               {{ opt.icon }} {{ opt.label }}
             </option>
           </select>
-        </div>
+        </div>-->
       </div>
 
       <!-- Identification -->
@@ -378,7 +406,11 @@ const submit = async () => {
         <BaseInput label="Nom *" v-model="nom" placeholder="Ex: KABAMBA" />
         <BaseInput label="Prénom *" v-model="prenom" placeholder="Ex: Jean" />
         <BaseInput label="Téléphone" v-model="telephone" placeholder="Ex: 243812345678" />
-        <BaseInput label="Sexe (M/F)" v-model="sexe" placeholder="M ou F" maxlength="1" />
+        <RadioGroup 
+          label="Genre *" 
+          v-model="sexe" 
+          :options="sexeOptions"
+        />
         <BaseInput label="Date de naissance" v-model="date_naissance" placeholder="YYYY-MM-DD" />
         <BaseInput label="Âge" v-model="age" placeholder="Ex: 35" type="number" />
         <BaseInput label="Adresse" v-model="adresse" placeholder="Adresse complète" class="md:col-span-2" />
@@ -411,9 +443,10 @@ const submit = async () => {
           </label>
         </div>
         
+        <!--
         <div class="text-xs text-gray-500 bg-white p-2 rounded">
           ⚠️ Note: L'API backend ne supporte pas encore tous ces champs. Certains peuvent être ignorés.
-        </div>
+        </div>-->
       </div>
 
       <!-- Actions -->
@@ -440,6 +473,7 @@ const submit = async () => {
       </div>
 
       <!-- Note d'information -->
+       <!--
       <div class="text-xs text-gray-500 bg-yellow-50 p-3 rounded-lg">
         <p class="flex items-center gap-2">
           <span>⚠️</span>
@@ -448,7 +482,7 @@ const submit = async () => {
             Le front applique une vérification anti-doublon.
           </span>
         </p>
-      </div>
+      </div>-->
     </div>
   </div>
 </template>

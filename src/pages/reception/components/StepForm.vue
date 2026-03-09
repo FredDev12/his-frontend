@@ -25,6 +25,8 @@ const handleSaved = (event) => {
     })
   }
 }
+
+console.log("form patient type", props.patientType)
 </script>
 
 <template>
@@ -35,6 +37,7 @@ const handleSaved = (event) => {
       :patient="selectedPatient"
       :relation="relation"
       :typedChildName="typedChildName"
+      :patientType="patientType"
       @saved="handleSaved"
     />
     <PatientForm v-else :patient="selectedPatient" @saved="handleSaved" />

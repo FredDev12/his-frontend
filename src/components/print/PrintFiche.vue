@@ -1,7 +1,10 @@
 <script setup>
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { useRouter } from "vue-router"
 import BaseButton from "../ui/BaseButton.vue"
+import html2pdf from 'html2pdf.js'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 const props = defineProps({
   patient: {
@@ -19,6 +22,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const isGenerating = ref(false)
 
 // Formater la date
 const formatDate = (date) => {
@@ -32,13 +36,96 @@ const formatDate = (date) => {
   })
 }
 
+console.log("patient print", props.patient)
+console.log("reception data", props.receptionData)
+
 // Numéro de fiche
 const ficheNumber = computed(() => {
-  return props.patient.numero_patient || `FICHE-${Date.now()}`
+  return props.patient.identification?.numero_patient || `FICHE-${Date.now()}`
 })
 
-// Imprimer
-const print = () => {
+const ageDisplay = computed(() => {
+  const age = props.patient?.identification?.age
+  return age ? `${age} ans` : 'Non défini'
+})
+
+// Générer PDF avec html2pdf
+const generatePDF = async () => {
+  isGenerating.value = true
+  
+  try {
+    const element = document.querySelector('.print-content')
+    
+    // Capturer l'élément avec html2canvas
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      logging: false,
+      allowTaint: true,
+      useCORS: true,
+      // Forcer le mode RGB
+      onclone: (clonedDoc) => {
+        const clonedElement = clonedDoc.querySelector('.print-content')
+        // Forcer les couleurs en RGB
+        const style = clonedDoc.createElement('style')
+        style.textContent = `
+          * { color: rgb(0,0,0) !important; }
+          .bg-gray-100 { background-color: rgb(243,244,246) !important; }
+          .bg-green-100 { background-color: rgb(220,252,231) !important; }
+          .bg-red-100 { background-color: rgb(254,226,226) !important; }
+        `
+        clonedElement.appendChild(style)
+      }
+    })
+    
+    // Créer le PDF
+    const imgData = canvas.toDataURL('image/jpeg', 0.95)
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'cm',
+      format: 'a4'
+    })
+    
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = pdf.internal.pageSize.getHeight()
+    const imgWidth = canvas.width
+    const imgHeight = canvas.height
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+    const width = imgWidth * ratio
+    const height = imgHeight * ratio
+    
+    pdf.addImage(imgData, 'JPEG', (pdfWidth - width) / 2, 0, width, height)
+    //pdf.save(`fiche-${ficheNumber.value}.pdf`)
+    // Ouvrir dans un nouvel onglet au lieu de télécharger
+    const pdfBlob = pdf.output('blob')
+    const pdfFile = new File([pdfBlob], `fiche-${ficheNumber.value}.pdf`, { type: 'application/pdf' })
+    const pdfUrl = URL.createObjectURL(pdfFile)
+
+    window.open(pdfUrl, '_blank')
+
+    //const link = document.createElement('a')
+    //link.href = pdfUrl
+    //link.target = '_blank'
+    //link.download = `fiche-${ficheNumber.value}.pdf` // Optionnel : pour le téléchargement
+    //document.body.appendChild(link)
+    //link.click()
+    //document.body.removeChild(link)
+    
+    // Nettoyer l'URL après l'ouverture (optionnel)
+    setTimeout(() => URL.revokeObjectURL(pdfUrl), 100)
+    
+  } catch (error) {
+    console.error('Erreur PDF:', error)
+    alert('Erreur lors de la génération du PDF')
+  } finally {
+    isGenerating.value = false
+  }
+}
+
+
+
+// Option d'impression directe (via le navigateur)
+const printDirect = () => {
   window.print()
 }
 
@@ -52,15 +139,25 @@ const goToList = () => {
   <div class="print-container">
     <!-- Boutons d'action (non imprimés) -->
     <div v-if="showPrintButton" class="no-print flex justify-end gap-3 mb-6">
-      <BaseButton variant="primary" @click="print">
+      <BaseButton 
+        variant="primary" 
+        @click="generatePDF" 
+        :loading="isGenerating"
+      >
+        <span v-if="!isGenerating">📄 Télécharger PDF</span>
+        <span v-else>Génération en cours...</span>
+      </BaseButton>
+      
+      <BaseButton variant="secondary" @click="printDirect">
         🖨️ Imprimer
       </BaseButton>
+      
       <BaseButton variant="secondary" @click="goToList">
         ← Retour à la liste
       </BaseButton>
     </div>
 
-    <!-- Fiche à imprimer -->
+    <!-- Fiche à imprimer / exporter -->
     <div class="print-content bg-white p-8 rounded-lg shadow-sm border">
       <!-- En-tête -->
       <div class="text-center mb-8 border-b pb-4">
@@ -75,27 +172,27 @@ const goToList = () => {
         <div class="grid grid-cols-2 gap-4">
           <div>
             <p class="text-sm text-gray-600">Nom complet</p>
-            <p class="font-medium">{{ patient.nom }} {{ patient.prenom }}</p>
+            <p class="font-medium">{{ patient.identification?.nom }} {{ patient.identification?.prenom }}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Sexe</p>
-            <p class="font-medium">{{ patient.sexe === 'M' ? 'Masculin' : 'Féminin' }}</p>
+            <p class="font-medium">{{ patient.identification?.sexe === 'M' ? 'Masculin' : 'Féminin' }}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Date de naissance</p>
-            <p class="font-medium">{{ patient.date_naissance || 'Non renseignée' }}</p>
+            <p class="font-medium">{{ patient.identification?.date_naissance || 'Non défini' }}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Âge</p>
-            <p class="font-medium">{{ patient.age || '-' }} ans</p>
+            <p class="font-medium">{{ ageDisplay }}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Téléphone</p>
-            <p class="font-medium">{{ patient.telephone || '-' }}</p>
+            <p class="font-medium">{{ patient.telephone || 'Non défini' }}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Adresse</p>
-            <p class="font-medium">{{ patient.adresse || '-' }}</p>
+            <p class="font-medium">{{ patient.adresse || 'Non défini' }}</p>
           </div>
         </div>
       </div>
@@ -138,23 +235,42 @@ const goToList = () => {
         </div>
       </div>
 
+      <!-- Type de passage et priorité (ajouté) -->
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold bg-gray-100 p-2 mb-4">ADMISSION</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-sm text-gray-600">Type de passage</p>
+            <p class="font-medium">{{ receptionData.typePassage || 'NEW' }}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-600">Priorité</p>
+            <p class="font-medium">{{ receptionData.priorite || 'ROUTINE' }}</p>
+          </div>
+          <div v-if="receptionData.serviceEntree">
+            <p class="text-sm text-gray-600">Service d'entrée</p>
+            <p class="font-medium">{{ receptionData.serviceEntree }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Services -->
       <div class="mb-6">
         <h2 class="text-lg font-semibold bg-gray-100 p-2 mb-4">SERVICES</h2>
         <div class="grid grid-cols-2 gap-2">
-          <div v-if="patient.medecine_interne" class="flex items-center gap-2">
+          <div v-if="patient.service_entree?.medecine_interne" class="flex items-center gap-2">
             <span class="text-green-600">✓</span> Médecine interne
           </div>
-          <div v-if="patient.pediatrie" class="flex items-center gap-2">
+          <div v-if="patient.service_entree?.pediatrie" class="flex items-center gap-2">
             <span class="text-green-600">✓</span> Pédiatrie
           </div>
-          <div v-if="patient.gyneco_obstetrique" class="flex items-center gap-2">
+          <div v-if="patient.service_entree?.gyneco_obstetrique" class="flex items-center gap-2">
             <span class="text-green-600">✓</span> Gynéco-obstétrique
           </div>
-          <div v-if="patient.chirurgie" class="flex items-center gap-2">
+          <div v-if="patient.service_entree?.chirurgie" class="flex items-center gap-2">
             <span class="text-green-600">✓</span> Chirurgie
           </div>
-          <div v-if="!patient.medecine_interne && !patient.pediatrie && !patient.gyneco_obstetrique && !patient.chirurgie">
+          <div v-if="!patient.service_entree?.medecine_interne && !patient.service_entree?.pediatrie && !patient.service_entree?.gyneco_obstetrique && !patient.service_entree?.chirurgie">
             <p class="text-gray-500">Aucun service sélectionné</p>
           </div>
         </div>
@@ -166,15 +282,15 @@ const goToList = () => {
         <div>
           <span 
             class="px-3 py-1 rounded-full text-sm"
-            :class="patient.urgence ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'"
+            :class="patient.priorite?.urgence ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'"
           >
-            {{ patient.urgence ? 'URGENCE' : 'Normal' }}
+            {{ patient.priorite?.urgence ? 'URGENCE' : 'Normal' }}
           </span>
         </div>
       </div>
 
       <!-- Paiement -->
-      <div class="mb-6">
+      <div v-if="receptionData.patientType !== 'agent'" class="mb-6">
         <h2 class="text-lg font-semibold bg-gray-100 p-2 mb-4">PAIEMENT</h2>
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -251,5 +367,13 @@ const goToList = () => {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+}
+
+/* Animation de chargement */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 </style>

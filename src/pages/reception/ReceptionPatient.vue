@@ -43,6 +43,8 @@ watch(() => wizard.patientType.value, (val) => {
 watch(wizard, () => {
   if (reception.loadDraft) reception.loadDraft()
 }, { immediate: true })
+
+console.log("reception patien type", wizard.patientType)
 </script>
 
 <template>
@@ -85,6 +87,7 @@ watch(wizard, () => {
         v-if="wizard.step.value === 3 && wizard.patientType.value === 'agent'"
         :selectedAgent="wizard.selectedAgent.value"
         :selectedPatient="wizard.selectedPatient.value"
+        :patientType="wizard.patientType.value"
         :relation="wizard.relation.value"
         :typedChildName="wizard.typedChildName.value"
         :existingMatches="wizard.existingMatches.value"
@@ -108,7 +111,7 @@ watch(wizard, () => {
 
       <!-- STEP 3: ALREADY PAID -->
       <StepAlreadyPaid
-        v-if="wizard.step.value === 3 && wizard.patientType.value === 'public' && !wizard.paymentRequiredNow.value"
+        v-if="wizard.step.value === 3 && wizard.patientType.value === 'agent' && !wizard.paymentRequiredNow.value"
         @next="wizard.step.value = 4"
         @back="wizard.goBack()"
       />
