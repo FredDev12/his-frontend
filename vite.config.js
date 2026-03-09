@@ -7,5 +7,18 @@ export default defineConfig({
     vue(),
     tailwindcss()
   ],
-  base: "/"
+  base: "/",
+  server: {
+    port: 5173,
+    hmr: {
+      overlay: false
+    }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
+    }
+  }
 })

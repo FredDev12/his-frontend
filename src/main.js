@@ -3,8 +3,13 @@ import { createPinia } from "pinia"
 
 import App from "./App.vue"
 import router from "./router"
+import { setupErrorFilter } from './utils/errorFilter'
+import { setupErrorHandler } from './utils/errorHandler'
 
 import "./style.css"
+
+setupErrorFilter()
+setupErrorHandler()
 
 const app = createApp(App)
 

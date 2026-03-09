@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from "vue"
 import Sidebar from "../components/layout/Sidebar.vue"
+import SidebarMobile from "../components/layout/SidebarMobile.vue";
 import Topbar from "../components/layout/Topbar.vue"
 import Breadcrumb from "../components/ui/Breadcrumb.vue";
 
@@ -16,19 +17,21 @@ const onSidebarToggle = (collapsed) => {
 
 <div class="flex h-screen overflow-hidden bg-gray-50">
 
-<Sidebar @toggle="onSidebarToggle" />
+<Sidebar @toggle="onSidebarToggle" class="hidden md:flex"/>
 
 <div class="flex-1 flex flex-col overflow-hidden transition-all duration-300">
 
-<Topbar :sidebar-collapsed="isSidebarCollapsed" />
+<Topbar :sidebar-collapsed="isSidebarCollapsed" class="hidden md:flex" />
+
+<SidebarMobile />
 
 <!-- Breadcrumb fixe -->
-      <div class="px-4 py-3 bg-white border-b">
+      <div class="px-4 md:px-6 py-3 bg-white border-b">
         <Breadcrumb />
       </div>
 
       <!-- Contenu scrollable -->
-      <main class="flex-1 overflow-y-auto">
+      <main class="flex-1 overflow-y-auto bg-gray-50">
         <div class="p-5">
           <router-view />
         </div>
@@ -63,5 +66,9 @@ const onSidebarToggle = (collapsed) => {
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background-color: #94a3b8;
+}
+
+.transition-all {
+  transition-property: margin, padding;
 }
 </style>

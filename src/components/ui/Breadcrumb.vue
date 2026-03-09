@@ -13,7 +13,6 @@ const routeConfig = {
   "/fiches/:id": { 
     label: "Détail fiche",
     icon: "📄",
-    // Fonction pour générer un libellé dynamique
     getLabel: (route) => `Fiche #${route.params.id}`
   },
   "/profile": { label: "Mon Profil", icon: "👤" }
@@ -21,12 +20,10 @@ const routeConfig = {
 
 // Détecter si une route correspond avec paramètres
 const findMatchingRoute = (path) => {
-  // Chercher d'abord une correspondance exacte
   if (routeConfig[path]) {
     return { config: routeConfig[path], params: {} }
   }
   
-  // Chercher une correspondance avec pattern
   for (const [pattern, config] of Object.entries(routeConfig)) {
     if (pattern.includes(":")) {
       const patternParts = pattern.split("/")
@@ -73,13 +70,11 @@ const breadcrumbs = computed(() => {
   pathSegments.forEach((segment, index) => {
     currentPath += `/${segment}`
     
-    // Trouver la configuration correspondante
     const match = findMatchingRoute(currentPath)
     
     let label = segment
     let icon = "📁"
     if (match) {
-      // Utiliser la fonction getLabel si elle existe
       if (match.config.getLabel) {
         label = match.config.getLabel({ params: match.params, path: currentPath })
       } else {
@@ -87,7 +82,6 @@ const breadcrumbs = computed(() => {
       }
       icon = match.config.icon || "📁"
     } else {
-      // Fallback: capitaliser le segment
       label = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ")
     }
     
@@ -108,32 +102,31 @@ const navigate = (path) => {
 </script>
 
 <template>
-  <nav aria-label="Breadcrumb" class="mb-6">
-    <ol class="flex items-center flex-wrap space-x-2 text-sm">
+  <nav aria-label="Breadcrumb">
+    <ol class="flex items-center flex-wrap gap-1 text-sm">
       <li
         v-for="(item, index) in breadcrumbs"
         :key="item.path"
         class="flex items-center"
       >
         <!-- Séparateur (sauf pour le premier) -->
-        <span v-if="index > 0" class="mx-2 text-gray-400 select-none">/</span>
+        <span v-if="index > 0" class="mx-1 text-gray-400 select-none">/</span>
         
         <!-- Lien cliquable ou texte selon si dernier élément -->
         <button
           v-if="!item.isLast"
           @click="navigate(item.path)"
-          class="text-blue-600 hover:text-blue-800 hover:underline transition flex items-center gap-1"
-          :class="{ 'font-medium': !item.isLast }"
+          class="text-blue-600 hover:text-blue-800 hover:underline transition flex items-center gap-1 px-1 py-0.5 rounded"
         >
           <span>{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
+          <span class="truncate max-w-[150px] md:max-w-none">{{ item.label }}</span>
         </button>
         <span
           v-else
-          class="text-gray-700 font-medium flex items-center gap-1"
+          class="text-gray-700 font-medium flex items-center gap-1 px-1"
         >
           <span>{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
+          <span class="truncate max-w-[150px] md:max-w-none">{{ item.label }}</span>
         </span>
       </li>
     </ol>
