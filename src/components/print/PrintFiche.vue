@@ -2,9 +2,7 @@
 import { computed, ref } from "vue"
 import { useRouter } from "vue-router"
 import BaseButton from "../ui/BaseButton.vue"
-import html2pdf from 'html2pdf.js'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
+
 
 const props = defineProps({
   patient: {
@@ -54,6 +52,9 @@ const generatePDF = async () => {
   isGenerating.value = true
   
   try {
+    const { default: html2canvas } = await import("html2canvas")
+    const { jsPDF } = await import("jspdf")
+    
     const element = document.querySelector('.print-content')
     
     // Capturer l'élément avec html2canvas

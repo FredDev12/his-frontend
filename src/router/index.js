@@ -1,17 +1,18 @@
 import { createRouter, createWebHistory } from "vue-router"
 
-import Login from "../pages/auth/Login.vue"
-import Dashboard from "../pages/dashboard/Dashboard.vue"
-import ReceptionPatient from "../pages/reception/ReceptionPatient.vue"
-import FichesList from "../pages/fiches/FichesList.vue"
-import FicheDetail from "../pages/fiches/FicheDetail.vue"
-import Profile from "../pages/profile/Profile.vue"
-import FichePrint from "../pages/fiches/FichePrint.vue"
+const Login = () => import("../pages/auth/Login.vue")
+const Dashboard = () => import("../pages/dashboard/Dashboard.vue")
+const ReceptionPatient = () => import("../pages/reception/ReceptionPatient.vue")
+const FichesList = () => import("../pages/fiches/FichesList.vue")
+const FicheDetail = () => import("../pages/fiches/FicheDetail.vue")
+const Profile = () => import("../pages/profile/Profile.vue")
+const FichePrint = () => import("../pages/fiches/FichePrint.vue")
 
-import AuthLayout from "../layouts/AuthLayout.vue"
-import DashboardLayout from "../layouts/DashboardLayout.vue"
+const AuthLayout = () => import("../layouts/AuthLayout.vue")
+const DashboardLayout = () => import("../layouts/DashboardLayout.vue")
 
 import { isAuthenticated } from "../utils/auth"
+
 
 const routes = [
   {
