@@ -21,12 +21,33 @@ const lastSavedPatient = ref(null)
 const lastReceptionData = ref({})
 
 const handleSaved = (event) => {
+  console.log("ReceptionPatient received saved event:", event)
+
   wizard.resetFlow()
   
   if (event.patient) {
     lastSavedPatient.value = event.patient
-    lastReceptionData.value = event.receptionData || {}
+    lastReceptionData.value = {
+      patientType: wizard.patientType.value,
+      agent: wizard.selectedAgent.value,
+      relation: wizard.relation.value,
+      typedChildName: wizard.typedChildName.value,
+      typePassage: reception.draft?.typePassage || "NEW",
+      priorite: reception.draft?.priorite || "ROUTINE",
+      serviceEntree: reception.draft?.serviceEntree || "",
+      paymentValidated: reception.draft?.payment?.paid || false,
+      payment: {
+        amount: reception.draft?.payment?.requiredAmount,
+        facture: reception.draft?.payment?.facture,
+        recu: reception.draft?.payment?.recu,
+        method: reception.draft?.payment?.method,
+        date: reception.draft?.payment?.paidAt
+      },
+      services: event.patient.service_entree || {}
+    }
     showPrintModal.value = true
+  } else {
+    console.error("❌ Patient data missing in saved event:", event)
   }
 }
 
@@ -39,10 +60,19 @@ watch(() => wizard.patientType.value, (val) => {
   wizard.watchPatientType(val)
 })
 
-// Charger le draft au montage
-watch(wizard, () => {
-  if (reception.loadDraft) reception.loadDraft()
-}, { immediate: true })
+if (reception.loadDraft) {
+  reception.loadDraft()
+}
+
+watch([
+  () => wizard.patientType.value,
+  () => wizard.relation.value,
+  () => wizard.typedChildName.value
+], () => {
+  if (reception.saveDraft) {
+    reception.saveDraft()
+  }
+})
 
 console.log("reception patien type", wizard.patientType)
 </script>
@@ -124,7 +154,7 @@ console.log("reception patien type", wizard.patientType)
         :selectedPatient="wizard.selectedPatient.value"
         :relation="wizard.relation.value"
         :typedChildName="wizard.typedChildName.value"
-        @saved="wizard.resetFlow()"
+        @saved="handleSaved"
       />
     </div>
 

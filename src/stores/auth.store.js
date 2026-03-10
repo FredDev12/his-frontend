@@ -1,5 +1,10 @@
 import { defineStore } from "pinia"
-import { loginUser, getProfile, updateProfile, changePassword, getLoginLogs, logoutUser } from "../api/auth.api"
+import { loginUser, 
+  getProfile, 
+  updateProfile, 
+  changePassword, 
+  getLoginLogs, 
+  logoutUser } from "../api/auth.api"
 import { isAuthenticated, getToken, getUser, setAuth as setAuthUtil, clearAuth as clearAuthUtil } from "../utils/auth"
 import { ref, computed } from "vue"
 import { useRouter } from "vue-router"

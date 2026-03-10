@@ -1,12 +1,21 @@
 <script setup>
 import FichePayment from "../../../modules/reception/components/FichePayment.vue"
 import BaseButton from "../../../components/ui/BaseButton.vue"
+import { useToastStore } from "../../../stores/toast.store"
 
-defineProps({
+const toast = useToastStore()
+const props = defineProps({
   paymentOk: Boolean
 })
 
 const emit = defineEmits(["next", "back"])
+
+if (props.paymentOk) {
+  toast.add("Paiement validé, vous pouvez continuer", "success")
+} else {
+  toast.add("Veuillez effectuer le paiement avant de continuer", "error")
+}
+
 </script>
 
 <template>

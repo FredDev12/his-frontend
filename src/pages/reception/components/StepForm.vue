@@ -13,7 +13,9 @@ const router = useRouter()
 const emit = defineEmits(["saved"])
 
 const handleSaved = (event) => {
-  emit("saved")
+  console.log("StepForm received saved event:", event) 
+
+  emit("saved", event)
   
   // Rediriger vers la page d'impression
   if (event.patientId) {

@@ -67,9 +67,10 @@ const choose = () => emit("chooseRelation", relation.value)
           <BaseBadge v-if="parentsAvailable" type="success" class="ml-2">disponible</BaseBadge>
         </div>
 
+        <!--
         <div class="text-xs text-gray-500 mt-2">
           NB: Liaison HIS (patient↔agent) pas encore native côté Patients.
-        </div>
+        </div>-->
       </div>
     </div>
 

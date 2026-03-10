@@ -76,10 +76,20 @@ const age = ref("")
 const telephone = ref("")
 const adresse = ref("")
 const urgence = ref(false)
+const etat_civil = ref("")
+const personne_contacter = ref("")
+const telephone_urgence = ref("")
 
 const sexeOptions = [
   { value: 'M', label: 'Masculin', icon: '👨', color: 'blue' },
   { value: 'F', label: 'Féminin', icon: '👩', color: 'pink' }
+]
+
+const etatCivilOptions = [
+  { value: 'CELIBATAIRE', label: 'Célibataire', icon: '💔', color: 'gray' },
+  { value: 'MARIE', label: 'Marié(e)', icon: '❤️', color: 'red' },
+  { value: 'DIVORCE', label: 'Divorcé(e)', icon: '💔', color: 'yellow' },
+  { value: 'VEUF', label: 'Veuf(ve)', icon: '🕊️', color: 'purple' }
 ]
 
 // Champs supplémentaires
@@ -137,6 +147,9 @@ const loadFromPatient = (p) => {
   telephone.value = safe(p?.telephone)
   adresse.value = safe(p?.adresse)
   urgence.value = !!p?.urgence
+  personne_contacter.value = safe(p?.personne_contacter)
+  telephone_urgence.value = safe(p?.telephone_urgence)
+  etat_civil.value = safe(p?.etat_civil)
 
   // Services
   services.value.medecine_interne = !!p?.medecine_interne
@@ -203,6 +216,9 @@ const buildPayload = () => ({
   age: normalizeSpaces(age.value),
   telephone: normalizeSpaces(telephone.value),
   adresse: normalizeSpaces(adresse.value),
+  personne_contacter: normalizeSpaces(personne_contacter.value),
+  telephone_urgence: normalizeSpaces(telephone_urgence.value),
+  etat_civil: normalizeSpaces(etat_civil.value),
   urgence: !!urgence.value,
   type_passage: typePassage.value,
   priorite: priorite.value,
@@ -286,7 +302,7 @@ const submit = async () => {
         priorite: priorite.value,
         serviceEntree: serviceEntree.value,
         paymentValidated: reception.paymentValidated,
-        payment: reception.payment
+        payment: reception.draft.payment
       }
     })
   } catch (e) {
@@ -413,7 +429,15 @@ console.log("patient type", props.patientType)
         />
         <BaseInput label="Date de naissance" v-model="date_naissance" placeholder="YYYY-MM-DD" />
         <BaseInput label="Âge" v-model="age" placeholder="Ex: 35" type="number" />
+        <RadioGroup 
+          label="Etat civil" 
+          v-model="etat_civil" 
+          :options="etatCivilOptions"
+        />
         <BaseInput label="Adresse" v-model="adresse" placeholder="Adresse complète" class="md:col-span-2" />
+        <BaseInput label="Personne à contacter" v-model="personne_contacter" placeholder="Ex: Jean" />
+        <BaseInput label="Téléphone durgence" v-model="telephone_urgence" placeholder="Ex: 243812345678" />
+        
       </div>
 
       <!-- Urgence -->
@@ -443,10 +467,6 @@ console.log("patient type", props.patientType)
           </label>
         </div>
         
-        <!--
-        <div class="text-xs text-gray-500 bg-white p-2 rounded">
-          ⚠️ Note: L'API backend ne supporte pas encore tous ces champs. Certains peuvent être ignorés.
-        </div>-->
       </div>
 
       <!-- Actions -->
@@ -473,16 +493,7 @@ console.log("patient type", props.patientType)
       </div>
 
       <!-- Note d'information -->
-       <!--
-      <div class="text-xs text-gray-500 bg-yellow-50 p-3 rounded-lg">
-        <p class="flex items-center gap-2">
-          <span>⚠️</span>
-          <span>
-            Le lien officiel Patient ↔ Agent CAC n'est pas encore stockable côté API. 
-            Le front applique une vérification anti-doublon.
-          </span>
-        </p>
-      </div>-->
+       
     </div>
   </div>
 </template>
