@@ -1,29 +1,36 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import { useToastStore } from "./toast.store"
-import { 
-    register,
-    verifyToken,
-    getProfile,
-    getLoginLogs,
-    updateProfile,
-    changePassword
+import { useAuthStore } from "./auth.store"
+import {
+  register,
+  getLoginLogs,
+  getProfile,
+  updateProfile,
+  changePassword,
+  getUser
 } from "../api/auth.api"
 
 export const useAdminStore = defineStore("admin", () => {
+
   const toast = useToastStore()
-  
-  // État
+  const authStore = useAuthStore()
+
   const users = ref([])
+  const userLogs = ref([])
+  const currentUser = ref(null)
+
+  const loading = ref(false)
+  const profileLoading = ref(false)
+  const passwordLoading = ref(false)
+
   const roles = ref([
     { id: 1, name: "admin", label: "Administrateur" },
     { id: 2, name: "user", label: "Utilisateur" },
     { id: 3, name: "reception", label: "Réceptionniste" },
     { id: 4, name: "medecin", label: "Médecin" }
   ])
-  const stats = ref(null)
-  const userLogs = ref([])
-  const loading = ref(false)
+
   const pagination = ref({
     page: 1,
     limit: 10,
@@ -31,284 +38,307 @@ export const useAdminStore = defineStore("admin", () => {
     totalPages: 1
   })
 
-  // Filtres
   const filters = ref({
     search: "",
     role: "",
     status: ""
   })
 
-  // Getters
-  const activeUsers = computed(() => 
-    users.value.filter(u => u.status === 'active')
+  const activeUsers = computed(() =>
+    users.value.filter(u => u.status === "active")
   )
 
-  const inactiveUsers = computed(() => 
-    users.value.filter(u => u.status === 'inactive')
+  const inactiveUsers = computed(() =>
+    users.value.filter(u => u.status === "inactive")
   )
 
   const usersByRole = computed(() => {
-    const byRole = {}
-    users.value.forEach(user => {
-      const role = user.role || 'user'
-      byRole[role] = (byRole[role] || 0) + 1
+    const result = {}
+    users.value.forEach(u => {
+      const role = u.role || "user"
+      result[role] = (result[role] || 0) + 1
     })
-    return byRole
+    return result
   })
 
-  // Actions - Gestion des utilisateurs via register
+  // -----------------------------
+  // Chargement utilisateurs 
+  // -----------------------------
+
   const fetchUsers = async (page = 1) => {
+
     loading.value = true
+
     try {
-      // Simulation - Dans un cas réel, il faudrait un endpoint GET /users
-      // En attendant, on peut stocker dans localStorage
-      const storedUsers = localStorage.getItem('users')
-      const allUsers = storedUsers ? JSON.parse(storedUsers) : []
-      
-      // Filtrer selon les critères
-      let filteredUsers = [...allUsers]
-      
+
+      const stored = await getUser()
+      const allUsers = stored ? JSON.parse(stored) : []
+
+      if (authStore.user && !allUsers.some(u => u.id === authStore.user.id)) {
+
+        allUsers.push({
+          ...authStore.user,
+          status: "active",
+          created_at: new Date().toISOString()
+        })
+
+        localStorage.setItem("users", JSON.stringify(allUsers))
+      }
+
+      let filtered = [...allUsers]
+
       if (filters.value.search) {
-        const search = filters.value.search.toLowerCase()
-        filteredUsers = filteredUsers.filter(u => 
-          u.nom?.toLowerCase().includes(search) ||
-          u.prenom?.toLowerCase().includes(search) ||
-          u.email?.toLowerCase().includes(search)
+
+        const s = filters.value.search.toLowerCase()
+
+        filtered = filtered.filter(u =>
+          u.nom?.toLowerCase().includes(s) ||
+          u.prenom?.toLowerCase().includes(s) ||
+          u.email?.toLowerCase().includes(s)
         )
       }
-      
+
       if (filters.value.role) {
-        filteredUsers = filteredUsers.filter(u => u.role === filters.value.role)
+        filtered = filtered.filter(u => u.role === filters.value.role)
       }
-      
+
       if (filters.value.status) {
-        filteredUsers = filteredUsers.filter(u => u.status === filters.value.status)
+        filtered = filtered.filter(u => u.status === filters.value.status)
       }
-      
-      // Pagination
+
       const start = (page - 1) * pagination.value.limit
       const end = start + pagination.value.limit
-      
-      users.value = filteredUsers.slice(start, end)
+
+      users.value = filtered.slice(start, end)
+
       pagination.value = {
         page,
         limit: pagination.value.limit,
-        total: filteredUsers.length,
-        totalPages: Math.ceil(filteredUsers.length / pagination.value.limit)
+        total: filtered.length,
+        totalPages: Math.ceil(filtered.length / pagination.value.limit)
       }
-      
-    } catch (error) {
-      toast.add("Erreur lors du chargement des utilisateurs", "error")
+
+    } catch (err) {
+
+      toast.add("Erreur chargement utilisateurs", "error")
+      console.log("",err)
+
     } finally {
+
       loading.value = false
+
     }
+
   }
 
-  const fetchUserById = async (id) => {
+  // -----------------------------
+  // Profil utilisateur connecté
+  // -----------------------------
+
+  const fetchCurrentUserProfile = async () => {
+
     try {
-      const storedUsers = localStorage.getItem('users')
-      const allUsers = storedUsers ? JSON.parse(storedUsers) : []
-      const user = allUsers.find(u => u.id === id)
-      
-      if (!user) throw new Error("Utilisateur non trouvé")
-      
-      // Récupérer les logs de connexion si disponibles
-      try {
-        const logsResponse = await getLoginLogs(id)
-        user.logs = logsResponse.data
-      } catch (e) {
-        user.logs = []
-      }
-      
+
+      profileLoading.value = true
+
+      const res = await getProfile()
+
+      currentUser.value = res.data.user || res.data.utilisateur || res.data
+
+      return currentUser.value
+
+    } catch (err) {
+
+      toast.add("Erreur chargement profil", "error")
+
+      throw err
+
+    } finally {
+
+      profileLoading.value = false
+
+    }
+
+  }
+
+  const updateCurrentUserProfile = async (data) => {
+
+    try {
+
+      profileLoading.value = true
+
+      const res = await updateProfile(data)
+
+      const user = res.data.user || res.data.utilisateur
+
+      authStore.user = { ...authStore.user, ...user }
+
+      currentUser.value = { ...currentUser.value, ...user }
+
+      toast.add("Profil mis à jour", "success")
+
       return user
-    } catch (error) {
-      toast.add("Utilisateur non trouvé", "error")
-      throw error
+
+    } catch (err) {
+
+      toast.add("Erreur mise à jour profil", "error")
+
+      throw err
+
+    } finally {
+
+      profileLoading.value = false
+
     }
+
   }
 
-  const addUser = async (userData) => {
+  // -----------------------------
+  // Password
+  // -----------------------------
+
+  const changeUserPassword = async (data) => {
+
     try {
-      // Utiliser register pour créer l'utilisateur
-      const response = await register({
-        email: userData.email,
-        password: userData.password,
-        nom: userData.nom,
-        prenom: userData.prenom,
-        role: userData.role || 'user'
+
+      passwordLoading.value = true
+
+      const res = await changePassword(data)
+
+      toast.add("Mot de passe changé", "success")
+
+      return res.data
+
+    } catch (err) {
+
+      toast.add("Erreur changement mot de passe", "error")
+
+      throw err
+
+    } finally {
+
+      passwordLoading.value = false
+
+    }
+
+  }
+
+  // -----------------------------
+  // Création utilisateur
+  // -----------------------------
+
+  const addUser = async (data) => {
+
+    try {
+
+      loading.value = true
+
+      const res = await register({
+        email: data.email,
+        password: data.password,
+        nom: data.nom,
+        prenom: data.prenom,
+        role: data.role || "user"
       })
-      
-      // Stocker dans localStorage pour la persistence
-      const storedUsers = localStorage.getItem('users')
-      const allUsers = storedUsers ? JSON.parse(storedUsers) : []
-      
+
       const newUser = {
-        ...response.data.user,
-        id: response.data.user.id || Date.now(),
-        status: 'active',
-        created_at: new Date().toISOString(),
-        telephone: userData.telephone,
-        adresse: userData.adresse
+        ...res.data.user,
+        status: "active",
+        created_at: new Date().toISOString()
       }
-      
+
+      const stored = localStorage.getItem("users")
+      const allUsers = stored ? JSON.parse(stored) : []
+
       allUsers.push(newUser)
-      localStorage.setItem('users', JSON.stringify(allUsers))
-      
-      await fetchUsers(pagination.value.page)
-      toast.add("Utilisateur créé avec succès", "success")
+
+      localStorage.setItem("users", JSON.stringify(allUsers))
+
+      await fetchUsers()
+
+      toast.add("Utilisateur créé", "success")
+
       return newUser
-      
-    } catch (error) {
-      toast.add(error.response?.data?.message || "Erreur création", "error")
-      throw error
+
+    } catch (err) {
+
+      toast.add("Erreur création utilisateur", "error")
+
+      throw err
+
+    } finally {
+
+      loading.value = false
+
     }
+
   }
 
-  const editUser = async (id, userData) => {
-    try {
-      const storedUsers = localStorage.getItem('users')
-      const allUsers = storedUsers ? JSON.parse(storedUsers) : []
-      const index = allUsers.findIndex(u => u.id === id)
-      
-      if (index === -1) throw new Error("Utilisateur non trouvé")
-      
-      // Mettre à jour l'utilisateur
-      allUsers[index] = {
-        ...allUsers[index],
-        ...userData,
-        updated_at: new Date().toISOString()
-      }
-      
-      localStorage.setItem('users', JSON.stringify(allUsers))
-      
-      await fetchUsers(pagination.value.page)
-      toast.add("Utilisateur modifié avec succès", "success")
-      return allUsers[index]
-      
-    } catch (error) {
-      toast.add("Erreur modification", "error")
-      throw error
-    }
-  }
-
-  const removeUser = async (id) => {
-    try {
-      const storedUsers = localStorage.getItem('users')
-      const allUsers = storedUsers ? JSON.parse(storedUsers) : []
-      const filteredUsers = allUsers.filter(u => u.id !== id)
-      
-      localStorage.setItem('users', JSON.stringify(filteredUsers))
-      
-      await fetchUsers(pagination.value.page)
-      toast.add("Utilisateur supprimé avec succès", "success")
-      
-    } catch (error) {
-      toast.add("Erreur lors de la suppression", "error")
-      throw error
-    }
-  }
-
-  const toggleStatus = async (id) => {
-    try {
-      const storedUsers = localStorage.getItem('users')
-      const allUsers = storedUsers ? JSON.parse(storedUsers) : []
-      const index = allUsers.findIndex(u => u.id === id)
-      
-      if (index === -1) throw new Error("Utilisateur non trouvé")
-      
-      allUsers[index].status = allUsers[index].status === 'active' ? 'inactive' : 'active'
-      localStorage.setItem('users', JSON.stringify(allUsers))
-      
-      await fetchUsers(pagination.value.page)
-      toast.add("Statut modifié avec succès", "success")
-      
-    } catch (error) {
-      toast.add("Erreur modification statut", "error")
-      throw error
-    }
-  }
-
-  const resetPassword = async (id) => {
-    try {
-      // Simulation - Dans un vrai projet, il faudrait un endpoint de reset
-      toast.add("Email de réinitialisation envoyé", "success")
-      return { message: "Password reset email sent" }
-      
-    } catch (error) {
-      toast.add("Erreur réinitialisation", "error")
-      throw error
-    }
-  }
+  // -----------------------------
+  // Logs
+  // -----------------------------
 
   const fetchUserLogs = async (userId) => {
+
     try {
-      const response = await getLoginLogs(userId)
-      userLogs.value = response.data.logs || response.data || []
+
+      loading.value = true
+
+      const res = await getLoginLogs(userId)
+
+      userLogs.value = res.data.logs || res.data.journaux || []
+
       return userLogs.value
-    } catch (error) {
-      console.error("Erreur logs:", error)
+
+    } catch (err) {
+
+      toast.add("Erreur chargement logs", "error")
+
       userLogs.value = []
+
+    } finally {
+
+      loading.value = false
+
     }
+
   }
 
-  const fetchStats = async () => {
-    try {
-      const storedUsers = localStorage.getItem('users')
-      const allUsers = storedUsers ? JSON.parse(storedUsers) : []
-      
-      stats.value = {
-        total: allUsers.length,
-        active: allUsers.filter(u => u.status === 'active').length,
-        inactive: allUsers.filter(u => u.status === 'inactive').length,
-        todayLogins: 0, // À calculer si possible
-        byRole: usersByRole.value
-      }
-      
-    } catch (error) {
-      console.error("Erreur stats:", error)
-    }
-  }
+  // -----------------------------
 
-  const setFilters = (newFilters) => {
-    filters.value = { ...filters.value, ...newFilters }
-    fetchUsers(1)
-  }
+  const clearCurrentUser = () => {
 
-  const resetFilters = () => {
-    filters.value = {
-      search: "",
-      role: "",
-      status: ""
-    }
-    fetchUsers(1)
+    currentUser.value = null
+    userLogs.value = []
+
   }
 
   return {
-    // État
+
     users,
     roles,
-    stats,
     userLogs,
+    currentUser,
+
     loading,
+    profileLoading,
+    passwordLoading,
+
     pagination,
     filters,
-    
-    // Getters
+
     activeUsers,
     inactiveUsers,
     usersByRole,
-    
-    // Actions
+
     fetchUsers,
-    fetchUserById,
-    fetchUserLogs,
-    fetchStats,
+    fetchCurrentUserProfile,
+    updateCurrentUserProfile,
+    changeUserPassword,
     addUser,
-    editUser,
-    removeUser,
-    toggleStatus,
-    resetPassword,
-    setFilters,
-    resetFilters
+    fetchUserLogs,
+    clearCurrentUser
+
   }
+
 })

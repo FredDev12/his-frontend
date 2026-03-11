@@ -53,13 +53,25 @@ const choose = () => emit("chooseRelation", relation.value)
       <div class="text-sm space-y-1">
         <div><span class="font-medium">Statut marital:</span> {{ agent.statut_marital || "-" }}</div>
 
-        <div>
+        <div v-if="agent.statut_marital === 'Marié(e)'">
           <span class="font-medium">Conjoint:</span>
           {{ agent.nom_conjoint || "-" }}
           <BaseBadge v-if="spouseAvailable" type="success" class="ml-2">disponible</BaseBadge>
         </div>
 
-        <div><span class="font-medium">Nombre d’enfants:</span> {{ agent.nbre_enfa || "0" }}</div>
+        <div v-if="agent.statut_marital === 'Marié(e)'">
+          <span class="font-medium">Nombre d’enfants:</span> 
+          {{ agent.nbre_enfa || "0" }}
+        </div>
+        <div v-if="agent.statut_marital === 'Marié(e)' && agent.nbre_enfa > 0">
+          <span class="font-medium">Nom d’enfants:</span> 
+          <ul class="list-disc pl-5">
+            <li v-for="child in agent.nom_enfant || []" :key="child">
+              {{ child || 'non renseigné' }}
+            </li>
+            <li v-if="!(agent.nom_enfant && agent.nom_enfant.length)">non renseigné</li>
+          </ul>
+        </div>
 
         <div>
           <span class="font-medium">Parents:</span>

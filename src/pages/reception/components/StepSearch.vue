@@ -1,5 +1,5 @@
 <script setup>
-import AgentSearch from "../../../modules/reception/components/AgentSearch.vue"
+import AgentSearch from "../../../modules/reception/components/agents/AgentSearch.vue"
 import PatientSearch from "../../../modules/reception/components/PatientSearch.vue"
 import BaseButton from "../../../components/ui/BaseButton.vue"
 

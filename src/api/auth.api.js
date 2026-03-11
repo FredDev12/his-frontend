@@ -30,6 +30,19 @@ export const loginUser = (data) => api.post("/auth/login", data)
  */
 export const register = (data) => api.post("/auth/register", data)
 
+
+/**
+ * Recuperer tous les utilisateur
+ * @returns 
+ * 
+ * @example
+ * 200 - informations utilisateur
+ * 401 - non autorisé
+ */
+export const getUser = () => api.get("/auth/user")
+
+
+
 /**
  * Déconnecte l'utilisateur courant
  * @returns {Promise<import('axios').AxiosResponse>} Réponse de l'API
