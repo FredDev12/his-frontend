@@ -260,9 +260,3 @@ onMounted(async () => {
   await fetchConsultation(route.params.id)
 })
 </script>
-
-<style scoped>
-.card {
-  @apply bg-white rounded-lg border border-gray-200 p-4 shadow-sm;
-}
-</style>
