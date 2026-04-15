@@ -26,7 +26,6 @@ export const useAdminStore = defineStore("admin", () => {
     loading.value = true
     try {
       const res = await getUser(params)
-      console.log("get ",res);
       
       users.value = res.data.users
 
@@ -42,7 +41,6 @@ export const useAdminStore = defineStore("admin", () => {
     loading.value = true
     try {
       const res = await registerUser(data)
-      console.log("create", res.data);
 
       this.users.value.unshift(res.data)
 

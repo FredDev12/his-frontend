@@ -61,8 +61,6 @@ const parentNames = computed(() => {
   }
 })
 
-console.log(parentNames.value);
-
 
 // Objet parent formaté pour le composant enfant
 const parentsInfo = computed(() => {

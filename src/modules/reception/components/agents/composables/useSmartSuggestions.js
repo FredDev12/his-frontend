@@ -17,8 +17,6 @@ export function useSmartSuggestions() {
 
     const agents = result?.data || result?.agents || []
 
-    console.log("auto suggestion resulta: ", result);
-    console.log("auto suggestion : ", agents);
     
 
     agents.forEach(a => {

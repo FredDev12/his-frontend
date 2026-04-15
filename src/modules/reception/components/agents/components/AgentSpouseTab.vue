@@ -10,9 +10,9 @@ const conjoint = computed(() => {
   if (!props.agent) return null
 
   return {
-    id: props.agent.conjoint_id,
+    id: props.agent.id,
     nom: props.agent.nom_conjoint,
-    enVie: true // ou API si dispo
+    enVie: true 
   }
 })
 </script>
@@ -21,6 +21,7 @@ const conjoint = computed(() => {
   <div class="bg-white shadow rounded p-4">
 
     <h3 class="font-bold mb-3">Conjoint</h3>
+
 
     <!-- Aucun conjoint -->
     <div v-if="!agent?.nom_conjoint" class="text-gray-500 text-sm italic">

@@ -14,8 +14,6 @@ const props = defineProps({
   patientType:String
 })
 
-console.log("StepAgentFamily props:", props.selectedAgent, props.selectedPatient, props.relation, props.typedChildName, props.existingMatches)
-
 const emit = defineEmits([
   "chooseRelation", 
   "checkExisting", 

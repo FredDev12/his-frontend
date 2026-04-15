@@ -144,7 +144,6 @@ const loadLoginLogs = async () => {
   loadingLogs.value = true
   try {
     const res = await auth.fetchLoginLogs(auth.user.id)
-    console.log("Login logs:", res)
   } finally {
     loadingLogs.value = false
   }

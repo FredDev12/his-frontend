@@ -24,7 +24,7 @@ const profile = () => {
 
 // Menu items avec icônes et badges
 const menuItems = [
-  { path: "/", name: "Dashboard", icon: "📊", roles: ["admin"] },
+  { path: "/", name: "Dashboard", icon: "📊", roles: ["admin", "secretaire"] },
 
   { path: "/reception", name: "Réception", icon: "🏥", roles: ["admin", "secretaire"] },
 
@@ -36,7 +36,7 @@ const menuItems = [
 
   { path: "/users", name: "Utilisateurs", icon: "👥", roles: ["admin"] },
 
-  { path: "/profile", name: "Mon Profil", icon: "👤", roles: ["admin", "medecin", "secretaire", "patient"] }
+  { path: "/profile", name: "Mon Profil", icon: "👤", roles: ["admin"] }
 ]
 
 const filteredMenu = computed(() => {

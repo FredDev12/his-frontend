@@ -12,7 +12,7 @@ export const getStatReception = () => api.get("/receptions/statistiques")
 
 export const getSearchReception = (data) => api.get("/receptions/search", data)
 
-export const getPatientReceptionById = (id) => api.get(`/receptions/patient/${id}`)
+export const getPatientReceptionById = (id) => api.get(`/receptions/${id}`)
 
 export const createReceptionAdmissions = (data) => api.post("/receptions/admissions", data)
 
@@ -23,3 +23,5 @@ export const getReceptionById = (id) => api.get(`/receptions/${id}`)
 export const updateReceptionById = (id, data) => api.patch(`/receptions/${id}`, data)
 
 export const deleteReceptionById = (id) => api.delete(`/receptions/${id}`)
+
+export const updateStatus =(id, data)=> api.patch(`/receptions/${id}/status`, data)

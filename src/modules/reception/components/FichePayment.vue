@@ -87,7 +87,6 @@ const pay = async () => {
 
   }catch(e){
     toast.add("Erreur paiement", "error")
-    console.log("Erreur lors du paiement:", e)
   }finally{
     loading.value = false
   }

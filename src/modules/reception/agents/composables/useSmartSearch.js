@@ -59,24 +59,22 @@ export function useSmartSearch() {
 
     if (!searchQuery) return
 
-    console.log("recherche smart :",searchQuery);
-
     
 
     switch(typeSearch) {
 
       case "cac":
       case "agentId":
-        console.log("Recherche par CAC / ID Agent :", searchQuery)
+        
         const query = searchQuery.toUpperCase();
         return await agentStore.searchAgentsByCAC(query)
 
       case "site":
-        console.log("Recherche par site :", searchQuery)
+        
         return await agentStore.searchAgentsBySite(searchQuery, params)
 
       case "fonction":
-        console.log("Recherche par fonction :", searchQuery)
+        
         return await agentStore.searchAgentsByFunction(searchQuery, params)
 
       case "global":
@@ -89,7 +87,7 @@ export function useSmartSearch() {
 
           const filters = cleanFilters(searchQuery)
 
-          console.log("Recherche multi-critères:", filters)
+          
 
           searchParams = {
             ...filters,
@@ -123,7 +121,7 @@ export function useSmartSearch() {
           searchParams.page = params.page
           searchParams.limit = params.limit
         }
-        console.log("Recherche globale - Params finaux:", searchParams)
+        
 
         return await agentStore.advancedSearch(searchParams)
     }

@@ -121,7 +121,6 @@ export const useAdminStore = defineStore("admin", () => {
     } catch (err) {
 
       toast.add("Erreur chargement utilisateurs", "error")
-      console.log("",err)
 
     } finally {
 

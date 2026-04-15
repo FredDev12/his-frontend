@@ -49,7 +49,7 @@
       />
     </div>
 
-    <template v-if="filteredResults.length > 2">
+    <template v-if="filteredResults.length > 1">
       <AgentList :agents="filteredResults" :type="searchType" @select="selectAgent" />
     </template>
 
@@ -57,9 +57,6 @@
       <AgentCard :agent="filteredResults[0]" @select="selectAgent"/>
     </template>
 
-    <template v-else-if="filteredResults.length === 2">
-      <AgentCard :agent="filteredResults" @select="selectAgent"/>
-    </template>
 
     <div v-else-if="!isLoading" class="text-center py-8 text-gray-500">
       Aucun résultat trouvé
@@ -183,7 +180,7 @@ const onSearch = async ({payload, type}) => {
     
     if (!results) return
 
-    if (results.data && Array.isArray(results.data)) {
+    if (results.data && Array.isArray(results?.data)) {
       searchResults.value = results.data
       searchPagination.value = {
         page: results.pagination?.page || 1,

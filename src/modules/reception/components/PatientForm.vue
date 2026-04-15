@@ -313,7 +313,6 @@ const submit = async () => {
   }
 }
 
-console.log("patient type", props.patientType)
 </script>
 
 <template>

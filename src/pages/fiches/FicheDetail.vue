@@ -99,7 +99,6 @@ function mapPatientToFiche(patient) {
 /** Load */
 const load = async () => {
   const id = route.params.id
-  console.log(route.params);
   
   if (!id) return
 

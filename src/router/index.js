@@ -16,6 +16,7 @@ const Profile = () => import("../pages/profile/Profile.vue")
 
 /* Modules */
 const TriageList = () => import("../modules/triage/pages/triageListPage.vue")
+const TriageDetailPage = () => import("../modules/triage/pages/triageDetailPage.vue")
 const ConsultationList = () => import("../modules/consultation/pages/ConsultationListPage.vue")
 
 
@@ -63,7 +64,7 @@ const routes = [
         path: "reception",
         name: "Reception",
         component: receptionPage,
-        meta: { breadcrumb: "Réception", roles: ["admin"] }
+        meta: { breadcrumb: "Réception", roles: ["admin", "secretaire"] }
       },
 
       // Admin
@@ -138,6 +139,12 @@ const routes = [
         component: TriageList,
         meta: { breadcrumb: "Triage", roles: ["admin", "secretaire"] }
       },
+      {
+        path: "triage/:id",
+        name: "TriageDetail",
+        component: TriageDetailPage,
+        meta: { breadcrumb: "Triage", roles: ["admin", "secretaire"] }
+      },
 
       // Consultation
       {
@@ -145,6 +152,24 @@ const routes = [
         name: "ConsultationList",
         component: ConsultationList,
         meta: { breadcrumb: "Consultation", roles: ["admin", "medecin"] }
+      },
+      {
+        path: "consultation/create",
+        name: "ConsultationCreate",
+        component: () => import("../modules/consultation/pages/ConsultationFormPage.vue"),
+        meta: { breadcrumb: "Nouvelle Consultation", roles: ["admin", "medecin"] }
+      },
+      {
+        path: "consultation/:id",
+        name: "ConsultationDetail",
+        component: () => import("../modules/consultation/pages/ConsultationDetailPage.vue"),
+        meta: { breadcrumb: "Détail Consultation", roles: ["admin", "medecin"] }
+      },
+      {
+        path: "consultation/:id/edit",
+        name: "ConsultationEdit",
+        component: () => import("../modules/consultation/pages/ConsultationFormPage.vue"),
+        meta: { breadcrumb: "Modifier Consultation", roles: ["admin", "medecin"] }
       },
       {
         path: "/unauthorized",

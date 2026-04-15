@@ -7,7 +7,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(["update:patientType", "next"])
-console.log("step type patient type", props.patientType)
 </script>
 
 <template>

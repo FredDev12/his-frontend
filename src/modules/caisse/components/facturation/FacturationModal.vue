@@ -3,12 +3,14 @@ import { reactive, computed, watch, onMounted, onBeforeUnmount, nextTick, ref } 
 import BaseButton from "../../../../components/ui/BaseButton.vue"
 import BaseInput from "../../../../components/ui/BaseInput.vue"
 import RadioGroup from "../../../../components/ui/RadioGroup.vue"
+import { useToastStore } from "../../../../stores/toast.store"
 
 const props = defineProps({
   show: Boolean,
   reception_id: Number
 })
 
+const toast = useToastStore()
 const emit = defineEmits(["close", "validate"])
 
 // ==========================
@@ -21,7 +23,9 @@ const actesContainer = ref(null)
 // ==========================
 const form = reactive({
   reception_id: null,
-  actes: [{ libelle: "", montant: 0 }],
+  actes: [
+    { libelle: "", montant: 0 , devise: "USD" }
+  ],
   mode_paiement: "CASH",
   paiement_effectue: true,
   observations: ""
@@ -50,11 +54,23 @@ const montant_total = computed(() =>
   form.actes.reduce((sum, a) => sum + Number(a.montant || 0), 0)
 )
 
+const totalUSD = computed(() =>
+  form.actes
+    .filter(a => a.devise === "USD")
+    .reduce((s, a) => s + Number(a.montant || 0), 0)
+)
+
+const totalCDF = computed(() =>
+  form.actes
+    .filter(a => a.devise === "CDF")
+    .reduce((s, a) => s + Number(a.montant || 0), 0)
+)
+
 // ==========================
 // UX SCROLL AUTO
 // ==========================
 const addActe = async () => {
-  form.actes.push({ libelle: "", montant: 0 })
+  form.actes.push({ libelle: "", montant: 0, devise: "USD"})
 
   await nextTick()
 
@@ -81,10 +97,53 @@ const removeActe = (index) => {
 }
 
 const validate = () => {
-  emit("validate", {
+  // =========================
+  // 1. VALIDATION ACTES
+  // =========================
+  if (!form.actes.length) {
+    toast.add("Veuillez ajouter au moins un acte", "warning", "center", 40000)
+    return
+  }
+
+  for (const [index, acte] of form.actes.entries()) {
+    if (!acte.libelle || acte.libelle.trim() === "") {
+      toast.add(`L'acte #${index + 1} doit avoir un libellé`, "warning", "center", 40000)
+      return
+    }
+
+    if (acte.montant === null || acte.montant === undefined || Number(acte.montant) <= 0) {
+      toast.add(`Le montant de l'acte "${acte.libelle}" doit être supérieur à 0`, "warning", "center", 40000)
+      return
+    }
+
+    if (!acte.devise) {
+      toast.add(`La devise est obligatoire pour l'acte "${acte.libelle}"`, "warning", "center", 40000)
+      return
+    }
+  }
+
+  // =========================
+  // 2. VALIDATION MODE PAIEMENT
+  // =========================
+  if (!form.mode_paiement) {
+    toast.add("Veuillez sélectionner un mode de paiement", "warning", "center", 40000)
+    return
+  }
+
+  // =========================
+  // 3. VALIDATION OK → CLEAN DATA
+  // =========================
+  const payload = {
     ...form,
+    actes: form.actes.map(a => ({
+      libelle: a.libelle.trim(),
+      montant: Number(a.montant),
+      devise: a.devise
+    })),
     montant_total: montant_total.value
-  })
+  }
+
+  emit("validate", payload)
 }
 
 // ==========================
@@ -131,7 +190,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleEsc))
           <div
             v-for="(acte, index) in form.actes"
             :key="index"
-            class="grid grid-cols-2 gap-2 items-end"
+            class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end border-b pb-3"
           >
             <BaseInput
               v-model="acte.libelle"
@@ -139,11 +198,19 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleEsc))
               placeholder="Ex: Consultation"
             />
 
-            <div class="flex gap-2">
-              <BaseInput
-                v-model="acte.montant"
-                type="number"
-                label="Montant"
+            <BaseInput
+              v-model="acte.montant"
+              type="number"
+              label="Montant"
+            />
+            <div class="flex items-end gap-2">
+              <RadioGroup
+                label="Devise"
+                v-model="acte.devise"
+                :options="[
+                  { label: 'USD', value: 'USD', color: 'blue' },
+                  { label: 'CDF', value: 'CDF', color: 'pink' }
+                ]"
               />
 
               <BaseButton
@@ -154,6 +221,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleEsc))
                 ✕
               </BaseButton>
             </div>
+           
           </div>
 
         </div>
@@ -183,9 +251,9 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleEsc))
       </div>
 
       <!-- TOTAL -->
-      <div class="flex justify-between border-t pt-3">
-        <strong>Total :</strong>
-        <strong>{{ montant_total }} USD</strong>
+      <div class="flex justify-between border-t pt-3 space-y-1">
+        <p><strong>Total USD :</strong> {{ totalUSD }} USD</p>
+        <p><strong>Total CDF :</strong> {{ totalCDF }} CDF</p>
       </div>
 
       <!-- MODE PAIEMENT -->

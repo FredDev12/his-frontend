@@ -63,25 +63,29 @@
           </td>
 
           <td class="p-3 cursor-pointer" @click="openDetail(item.id)">
-            {{ item.nom || "-" }} {{ item.prenom || "" }}
+            {{ item.nom || item.identification_patient.nom || "-" }} {{ item.nom || item.identification_patient.postnom || "-" }}
           </td>
 
-          <td class="p-3">{{ item.numero_patient || "-" }}</td>
+          <td class="p-3 cursor-pointer" @click="openDetail(item.id)">
+            {{ item.numero_fiche || "-" }}
+          </td>
 
-          <td class="p-3">{{ item.telephone || "-" }}</td>
+          <td class="p-3 cursor-pointer" @click="openDetail(item.id)">
+            {{ item.identification_patient.telephone || "-" }}
+          </td>
 
-          <td class="p-3">
+          <td class="p-3" @click="openDetail(item.id)">
             <span
               class="text-xs px-2 py-1 rounded"
-              :class="item.paiement_effectue 
+              :class="item.paiement_fiche.paiement_effectue 
                 ? 'bg-green-100 text-green-700' 
                 : 'bg-red-100 text-red-700'"
             >
-              {{ item.paiement_effectue ? "PAYÉ" : "NON" }}
+              {{ item.paiement_fiche.paiement_effectue ? "PAYÉ" : "NON" }}
             </span>
           </td>
 
-          <td class="p-3 text-gray-600">
+          <td class="p-3 text-gray-600 cursor-pointer" @click="openDetail(item.id)">
             {{ item.created_at 
               ? new Date(item.created_at).toLocaleString() 
               : "-" }}
@@ -104,10 +108,14 @@ import BaseInput from "../../../components/ui/BaseInput.vue"
 import BaseButton from "../../../components/ui/BaseButton.vue"
 import BaseBadge from "../../../components/ui/BaseBadge.vue"
 import BaseTable from "../../../components/ui/BaseTable.vue"
+import { usePatientsStore } from "../../reception/components/patients/stores/patients.store"
+import { useReceptionStore } from "../../reception/stores/reception.store"
 
 const router = useRouter()
 const toast = useToastStore()
-const patient = useTriageStore()
+const triage = useTriageStore()
+const patient = usePatientsStore()
+const reception = useReceptionStore()
 
 const loading = ref(false)
 const patients = ref([])
@@ -119,8 +127,10 @@ const normalize = (s) => (s || "").toString().trim().toLowerCase()
 const fetchAll = async () => {
   loading.value = true
   try {
-    await patient.fetchPatients()
-    patients.value = patient.patients || []
+    const res = await reception.fetchPatients()
+    patients.value = res.data || []
+
+    
   } catch (e) {
     patients.value = []
     toast.add(`Impossible de charger les fiches ${e}`, "error")
@@ -140,26 +150,26 @@ const filtered = computed(() => {
   // Recherche
   if (term) {
     result = result.filter(p =>
-      normalize(p.nom).includes(term) ||
-      normalize(p.prenom).includes(term) ||
-      normalize(p.telephone).includes(term) ||
-      normalize(p.numero_patient).includes(term)
+      normalize(p.identification_patient.nom).includes(term) ||
+      normalize(p.identification_patient.prenom).includes(term) ||
+      normalize(p.identification_patient.telephone).includes(term) ||
+      normalize(p.numero_fiche).includes(term)
     )
   }
 
   // Filtre paiement
   if (filterPaiement.value === "paid") {
-    result = result.filter(p => p.paiement_effectue)
+    result = result.filter(p => p.paiement_fiche.paiement_effectue)
   }
 
   if (filterPaiement.value === "unpaid") {
-    result = result.filter(p => !p.paiement_effectue)
+    result = result.filter(p => !p.paiement_fiche.paiement_effectue)
   }
 
   return result
 })
 
 const openDetail = (id) => {
-  router.push({ name: "PatientDetail", params: { id } })
+  router.push({ name: "TriageDetail", params: { id } })
 }
 </script>

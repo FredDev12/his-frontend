@@ -150,7 +150,6 @@ const fetchAll = async () => {
 
 onMounted(() =>{
   fetchAll()
-  //console.log("users: ", user.value);
   
 })
 
@@ -164,7 +163,6 @@ const filtered = computed(() => {
 
   let result = [...user.value]
 
-  console.log("filtre result :", result);
   
 
   // Recherche

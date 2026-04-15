@@ -98,7 +98,6 @@ export const useAgentStore = defineStore("agent", () => {
       const response = await getAgentById(id)
       agent.value = { ...response.data }
 
-      console.log("Id by :", response);
       
 
       return response.data
@@ -117,7 +116,6 @@ export const useAgentStore = defineStore("agent", () => {
     error.value = null
     try {
       const response = await getAgentByCAC(cacId)
-      console.log("reponse ID CAC", response);
       
       agent.value = { ...response.data.data }
 
@@ -132,17 +130,16 @@ export const useAgentStore = defineStore("agent", () => {
 
   // --- Recherche par site avec pagination
   const searchAgentsBySite = async (siteName, params) => {
-    console.log("query by site : ", siteName, params )
+    
     if (!siteName) return
     loading.value = true
     error.value = null
     try {
       const response = await getAgentsBySite(siteName, params)
-      console.log("reponse site :", response.data)
+      
       setPaginatedResponse(response.data, params)
 
-      console.log("reponse site agent :", agentsPaginated.value)
-      console.log("reponse site page:", pagination.value)
+      
 
       return response.data
 
@@ -161,11 +158,7 @@ export const useAgentStore = defineStore("agent", () => {
     error.value = null
     try {
       const response = await getAgentsByFunction(fonction, params)
-      console.log("response fonction:", response);
       setPaginatedResponse(response.data, params)
-
-      console.log("response fonction:", response);
-      
 
       return response.data
 
@@ -183,9 +176,7 @@ export const useAgentStore = defineStore("agent", () => {
     loading.value = true
     error.value = null
     try {
-      console.log("search by field :",fieldName, params)
       const response = await getAgentsByField(fieldName, params)
-      console.log("result by field", response);
       
       setPaginatedResponse(response.data, params)
       searchByFieldParams.value = { ...DEFAULT_AGENT_SEARCH_BY_FIELD, ...params }
@@ -205,8 +196,6 @@ export const useAgentStore = defineStore("agent", () => {
     loading.value = true
     error.value = null
     try {
-      console.log(params);
-      
       const response = await searchAgents(params)
       setPaginatedResponse(response.data, params)
       return response.data

@@ -24,7 +24,6 @@ const fetchAll = async () => {
   try {
     await patient.fetchPatients()
     patients.value = patient.patients || []
-    console.log("Fetched patients:", patients.value)
 
   } catch (e) {
     patients.value = []

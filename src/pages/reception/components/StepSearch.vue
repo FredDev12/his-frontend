@@ -10,7 +10,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(["selectAgent", "selectPatient", "next", "back"])
-console.log("Search", props.patientType)
 </script>
 
 <template>

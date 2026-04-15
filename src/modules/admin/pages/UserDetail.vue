@@ -196,7 +196,7 @@ const goBack = () => {
 
 // 💾 Save (à connecter API)
 const saveUser = async () => {
-  console.log("Update user:", form.value)
+  
   editMode.value = false
 }
 </script>

@@ -31,7 +31,6 @@ export const useTriageStore = defineStore("triage", () => {
     loading.value = true
     try {
       const res = await getTriage(params)
-      console.log(res);
       
       patients.value = res
     } catch (err) {
@@ -48,7 +47,6 @@ export const useTriageStore = defineStore("triage", () => {
     loading.value = true
     try {
       const res = await getTriageById(id)
-      console.log(res);
       
       patient.value = res
     } catch (err) {
@@ -64,16 +62,13 @@ export const useTriageStore = defineStore("triage", () => {
   const addPatient = async (payload) => {
     loading.value = true
     try {
-      console.log("ajout patient : ", payload);
       
       const res = await createTriage(payload)
 
-      console.log("reponse enregistement patient :", res);
       
       //return res.data
     } catch (err) {
       error.value = err
-      console.log("error de creation", err);
       
       throw err
     } finally {

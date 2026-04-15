@@ -21,7 +21,7 @@ const lastSavedPatient = ref(null)
 const lastReceptionData = ref({})
 
 const handleSaved = (event) => {
-  console.log("ReceptionPatient received saved event:", event)
+  
 
   wizard.resetFlow()
   
@@ -74,7 +74,6 @@ watch([
   }
 })
 
-console.log("reception patien type", wizard.patientType)
 </script>
 
 <template>

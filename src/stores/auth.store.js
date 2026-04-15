@@ -47,17 +47,14 @@ export const useAuthStore = defineStore("auth", () => {
   const login = async (credentials) => {
     loading.value = true
     try {
-      console.log("Tentative de connexion avec:", credentials)
       const res = await loginUser(credentials)
-      
+
       // Vérifier la structure de la réponse
       const userData = res.data.user || res.data
       const authToken = res.data.token || res.data.accessToken
 
-      console.log("Réponse de connexion:", res.data)
 
 
-      
       setAuthState(userData, authToken)
       toast.add("Connexion réussie", "success")
 

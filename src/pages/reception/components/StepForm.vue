@@ -13,7 +13,7 @@ const router = useRouter()
 const emit = defineEmits(["saved"])
 
 const handleSaved = (event) => {
-  console.log("StepForm received saved event:", event) 
+  
 
   emit("saved", event)
   
@@ -28,7 +28,6 @@ const handleSaved = (event) => {
   }
 }
 
-console.log("form patient type", props.patientType)
 </script>
 
 <template>

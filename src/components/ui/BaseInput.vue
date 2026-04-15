@@ -34,6 +34,7 @@ const props = defineProps({
   }
 })
 
+defineOptions({ inheritAttrs: false })
 const emit = defineEmits(["update:modelValue", "blur", "focus", "keydown", "toggle-password"])
 
 const onInput = (e) => {
@@ -54,6 +55,7 @@ const togglePassword = () => {
 
     <div class="relative">
       <input
+        v-if="type !== 'textarea'"
         :type="type"
         :value="modelValue"
         :placeholder="placeholder"
@@ -66,9 +68,21 @@ const togglePassword = () => {
         @focus="$emit('focus', $event)"
         @keydown="$emit('keydown', $event)"
       />
+      
+      <textarea
+        v-else
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :rows="$attrs.rows || 3"
+        v-bind="$attrs"
+        class="w-full border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100 transition"
+        :class="{ 'border-red-500': error }"
+        @input="onInput"
+      ></textarea>
 
       <button
-        v-if="showPasswordToggle"
+        v-if="showPasswordToggle && type !== 'textarea'"
         type="button"
         @click="togglePassword"
         class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"

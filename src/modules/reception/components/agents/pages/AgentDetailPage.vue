@@ -42,6 +42,7 @@ const agent = computed(() => agentStore?.agent || [])
 
         <div v-if="agent">
 
+            <!-- profil de l'agent-->
             <AgentProfileCard :agent="agent" />
 
             <div class="grid grid-coles-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">

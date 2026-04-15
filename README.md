@@ -2,16 +2,17 @@
 
 ## Description
 
-HIS Frontend est une application web frontend développée avec Vue.js 3 pour un système d'information hospitalier (HIS - Health Information System). Cette application est conçue pour gérer la réception des patients dans un hôpital, en permettant la création de fiches de réception, la recherche de patients et d'agents, ainsi que la gestion des paiements pour les patients publics.
+HIS Frontend est une application web frontend développée avec Vue.js 3 pour un système d'information hospitalier (HIS - Health Information System). Cette application est conçue pour gérer l'ensemble des opérations hospitalières, incluant la réception des patients, la gestion administrative, le triage, les consultations, et les modules financiers.
 
-L'application utilise une architecture modulaire avec des composants réutilisables, une gestion d'état centralisée avec Pinia, et une interface utilisateur moderne basée sur Tailwind CSS.
+L'application utilise une architecture modulaire avec des composants réutilisables, une gestion d'état centralisée avec Pinia, et une interface utilisateur moderne basée sur Tailwind CSS. Elle intègre une API complète pour communiquer avec le backend et supporte l'authentification basée sur les rôles.
 
 ## Fonctionnalités
 
 ### Authentification
 
-- Connexion sécurisée des utilisateurs
+- Connexion sécurisée des utilisateurs avec gestion des rôles (admin, médecin, secrétaire, patient)
 - Protection des routes avec des gardes d'authentification
+- Gestion des profils utilisateurs et changement de mot de passe
 
 ### Tableau de Bord
 
@@ -19,6 +20,7 @@ L'application utilise une architecture modulaire avec des composants réutilisab
   - Nombre de patients aujourd'hui
   - Urgences
   - Consultations
+  - Statistiques des agents
 
 ### Module Réception
 
@@ -30,17 +32,82 @@ L'application utilise une architecture modulaire avec des composants réutilisab
 - **Paiement** : Validation des paiements pour les patients publics
 - **Gestion des fiches** : Liste des fiches de réception et détails
 
+### Module Admin
+
+- Gestion complète des utilisateurs : création, modification, suppression
+- Recherche et filtrage des utilisateurs
+- Gestion des rôles et permissions
+- Consultation des logs d'authentification
+
+### Module Triage
+
+- Liste des patients en triage avec recherche et filtres
+- Détails complets des enregistrements de triage
+- Gestion des statuts et priorités
+
+### Module Consultation
+
+- Gestion complète des consultations médicales : création, modification, consultation
+- Recherche et filtrage avancés
+- Saisie des constantes (poids, taille, température, tension)
+- Calcul automatique de l'IMC
+- Diagnostic et traitement
+- Prescriptions et examens complémentaires
+
+### Module Persons
+
+- Gestion des personnes avec support multi-relations
+- Enregistrement des patients comme agents, conjoints, parents ou publics
+- Génération de numéros de facture et suivi des paiements
+
 ### Composants UI Réutilisables
 
-- Boutons, badges, cartes, tableaux, inputs, etc.
+- Boutons, badges, cartes, tableaux, inputs, modals, etc.
 - Loader global et système de notifications (toast)
+- Composants de recherche et sélecteurs
 
 ### API Integration
 
-- Intégration avec un backend via Axios pour :
+- Intégration complète avec un backend via Axios pour :
   - Gestion des patients (CRUD, recherche)
-  - Gestion des agents
-  - Authentification
+  - Gestion des agents et relations
+  - Authentification et autorisation
+  - Triage, consultations, imagerie, pharmacie, laboratoire
+  - Audit et logs
+  - Gestion financière (caisse)
+
+## État du Projet
+
+### Ce qui est Implémenté (Production-Ready)
+
+- **Infrastructure Complète** : Authentification, gestion d'état (Pinia), composants UI, API intégration
+- **Modules Fonctionnels** :
+  - Authentification et gestion des utilisateurs
+  - Réception des patients avec recherche intelligente
+  - Administration complète (gestion utilisateurs, rôles)
+  - Triage avec liste et détails
+  - Gestion des personnes avec relations complexes
+  - Tableau de bord avec statistiques
+- **API Complète** : Tous les endpoints pour patients, agents, triage, consultations, etc.
+
+### Ce qui est Partiellement Implémenté
+
+- **Gestion des Fiches** : Liste et détails fonctionnels, paiement à finaliser
+- **Profil Utilisateur** : Affichage basique, édition partielle
+
+### Ce qui est Planifié (À Développer)
+
+- **Module Caisse (Financier)** : Sessions caisse, facturation, rapports financiers
+- **Modules Métiers** : Pharmacie, Laboratoire, Imagerie, Sortie (API prête, UI à créer)
+- **Fonctionnalités Avancées** : Génération de reçus PDF, rapports détaillés, validation de formulaires complète
+- **Améliorations** : Nettoyage du code (console.logs), activation des gestionnaires d'erreurs, intégration temps réel via Socket.io
+
+### Prochaines Étapes Prioritaires
+
+1. Développer le module Caisse
+2. Créer les modules Pharmacie, Laboratoire, Imagerie, Sortie
+3. Implémenter les rapports et reçus
+4. Nettoyer et optimiser le code pour la production
 
 ## Technologies Utilisées
 
@@ -54,66 +121,81 @@ L'application utilise une architecture modulaire avec des composants réutilisab
 
 ## Structure du Projet
 
-   ```md
-   src/
-   ├── api/                    # Modules API pour les appels backend
-   │   ├── agents.api.js       # API pour les agents
-   │   ├── auth.api.js         # API pour l'authentification
-   │   ├── axios.js            # Configuration Axios
-   │   └── patients.api.js     # API pour les patients
-   ├── assets/                 # Ressources statiques (images, etc.)
-   ├── components/             # Composants réutilisables
-   │   ├── HelloWorld.vue      # Composant d'exemple
-   │   ├── layout/             # Composants de mise en page
-   │   │   ├── Sidebar.vue     # Barre latérale
-   │   │   └── Topbar.vue      # Barre supérieure
-   │   └── ui/                 # Composants UI de base
-   │       ├── BaseBadge.vue
-   │       ├── BaseButton.vue
-   │       ├── BaseCard.vue
-   │       ├── BaseInput.vue
-   │       ├── BaseTable.vue
-   │       ├── GlobalLoader.vue
-   │       └── ToastHost.vue
-   ├── layouts/                # Layouts de page
-   │   ├── AuthLayout.vue      # Layout pour l'authentification
-   │   └── DashboardLayout.vue # Layout pour le tableau de bord
-   ├── modules/                # Modules métier
-   │   └── reception/          # Module réception
-   │       ├── components/     # Composants spécifiques à la réception
-   │       │   ├── AgentRelationSelector.vue
-   │       │   ├── AgentResultCard.vue
-   │       │   ├── AgentSearch.vue
-   │       │   ├── FastPatientSearch.vue
-   │       │   ├── FichePayment.vue
-   │       │   ├── PatientForm.vue
-   │       │   ├── PatientSearch.vue
-   │       │   ├── PatientsTable.vue
-   │       │   └── PatientTypeSelector.vue
-   │       └── services/       # Services métier
-   │           └── reception.service.js
-   ├── pages/                  # Pages de l'application
-   │   ├── auth/
-   │   │   └── Login.vue       # Page de connexion
-   │   ├── dashboard/
-   │   │   └── Dashboard.vue   # Page tableau de bord
-   │   └── reception/          # Pages réception
-   │       ├── ReceptionFicheDetail.vue
-   │       ├── ReceptionFichesList.vue
-   │       └── ReceptionPatient.vue
-   ├── router/                 # Configuration du routage
-   │   └── index.js
-   ├── stores/                 # Stores Pinia pour la gestion d'état
-   │   ├── auth.store.js       # Store authentification
-   │   ├── loader.store.js     # Store loader
-   │   ├── reception.store.js  # Store réception
-   │   └── toast.store.js      # Store notifications
-   ├── utilis/                 # Utilitaires
-   │   └── auth.js             # Utilitaires d'authentification
-   ├── App.vue                 # Composant racine
-   ├── main.js                 # Point d'entrée de l'application
-   └── style.css               # Styles globaux
-   ```
+```
+src/
+├── api/                    # Modules API pour les appels backend
+│   ├── admin.api.js        # API administration
+│   ├── agents.api.js       # API pour les agents
+│   ├── audit.api.js        # API audit et logs
+│   ├── auth.api.js         # API pour l'authentification
+│   ├── axios.js            # Configuration Axios
+│   ├── caisse.api.js       # API caisse financière
+│   ├── consultation.api.js # API consultations
+│   ├── imagerie.api.js     # API imagerie
+│   ├── laboratoire.api.js  # API laboratoire
+│   ├── patients.api.js     # API pour les patients
+│   ├── pharmacie.api.js    # API pharmacie
+│   ├── reception.api.js    # API réception
+│   ├── socket.js           # Configuration Socket.io
+│   ├── sortie.api.js       # API sortie
+│   └── triage.api.js       # API triage
+├── assets/                 # Ressources statiques
+├── components/             # Composants réutilisables
+│   ├── layout/             # Composants de mise en page
+│   │   ├── Sidebar.vue     # Barre latérale
+│   │   ├── SidebarMobile.vue # Barre latérale mobile
+│   │   └── Topbar.vue      # Barre supérieure
+│   ├── print/              # Composants d'impression
+│   └── ui/                 # Composants UI de base
+├── layouts/                # Layouts de page
+│   ├── AuthLayout.vue      # Layout pour l'authentification
+│   └── DashboardLayout.vue # Layout pour le tableau de bord
+├── modules/                # Modules métier
+│   ├── admin/              # Module administration
+│   │   ├── components/     # Composants admin
+│   │   ├── pages/          # Pages admin
+│   │   ├── stores/         # Stores admin
+│   │   └── types/          # Types admin
+│   ├── caisse/             # Module caisse (à développer)
+│   ├── consultation/       # Module consultation
+│   ├── persons/            # Module personnes
+│   ├── reception/          # Module réception
+│   │   ├── agents/         # Sous-module agents
+│   │   ├── components/     # Composants réception
+│   │   ├── composables/    # Composables réception
+│   │   ├── pages/          # Pages réception
+│   │   ├── services/       # Services réception
+│   │   ├── stores/         # Stores réception
+│   │   └── types/          # Types réception
+│   └── triage/             # Module triage
+├── pages/                  # Pages de l'application
+│   ├── admin/              # Pages admin
+│   ├── auth/               # Pages auth
+│   ├── dashboard/          # Pages dashboard
+│   ├── fiches/             # Pages fiches
+│   ├── profile/            # Pages profil
+│   └── reception/          # Pages réception
+├── router/                 # Configuration du routage
+│   ├── index.js            # Routes principales
+│   └── modules/            # Routes modulaires
+├── shared/                 # Composants partagés
+│   ├── components/         # Composants partagés
+│   └── utils/              # Utilitaires partagés
+├── stores/                 # Stores Pinia
+│   ├── admin.store.js      # Store admin
+│   ├── auth.store.js       # Store auth
+│   ├── loader.store.js     # Store loader
+│   ├── reception.store.js  # Store réception
+│   └── toast.store.js      # Store notifications
+├── utils/                  # Utilitaires
+│   ├── auth.js             # Utilitaires auth
+│   ├── errorFilter.js      # Filtrage erreurs
+│   ├── errorHandler.js     # Gestion erreurs
+│   └── pagination.js       # Pagination
+├── App.vue                 # Composant racine
+├── main.js                 # Point d'entrée
+└── style.css               # Styles globaux
+```
 
 ## Installation
 
@@ -174,27 +256,42 @@ npm run preview
 
 L'application utilise Pinia pour la gestion d'état centralisée :
 
-- **auth.store.js** : Gestion de l'état d'authentification
+- **auth.store.js** : Gestion de l'état d'authentification, profils, rôles
+- **admin.store.js** : Gestion des utilisateurs et administration
 - **loader.store.js** : Gestion du loader global
 - **reception.store.js** : Gestion de l'état du module réception
 - **toast.store.js** : Gestion des notifications toast
 
 ### Routage
 
-Le routage est géré par Vue Router avec des layouts :
+Le routage est géré par Vue Router avec des layouts et une protection basée sur les rôles :
 
 - Routes publiques : `/login`
-- Routes protégées : `/`, `/reception`, `/reception/fiches`, etc.
+- Routes protégées : `/`, `/admin`, `/reception`, `/triage`, `/fiches`, etc.
+- Routes modulaires dans `router/modules/`
+- Support des breadcrumbs et navigation conditionnelle
 
 ### API
 
-Les appels API sont centralisés dans le dossier `api/` avec Axios comme client HTTP.
+Les appels API sont centralisés dans le dossier `api/` avec Axios comme client HTTP. Chaque module a son propre fichier API avec des endpoints complets pour CRUD et opérations spécialisées.
 
 ### Composants
 
-- **Layouts** : Structures de page réutilisables
-- **UI Components** : Composants de base pour l'interface
+- **Layouts** : Structures de page réutilisables (Auth, Dashboard)
+- **UI Components** : Composants de base pour l'interface (BaseButton, BaseTable, etc.)
 - **Module Components** : Composants spécifiques aux fonctionnalités métier
+- **Shared Components** : Composants réutilisables entre modules
+
+### Modules Métier
+
+L'application est organisée en modules indépendants :
+
+- **Admin** : Gestion utilisateurs et système
+- **Reception** : Accueil et enregistrement patients
+- **Triage** : Classification des urgences
+- **Consultation** : Gestion des consultations médicales
+- **Persons** : Gestion des personnes et relations
+- **Caisse** : Module financier (planifié)
 
 ## Contribution
 

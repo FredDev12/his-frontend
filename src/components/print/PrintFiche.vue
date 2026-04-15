@@ -34,9 +34,6 @@ const formatDate = (date) => {
   })
 }
 
-console.log("patient print", props.patient)
-console.log("reception data", props.receptionData)
-
 // Numéro de fiche
 const ficheNumber = computed(() => {
   return props.patient.identification?.numero_patient || `FICHE-${Date.now()}`
