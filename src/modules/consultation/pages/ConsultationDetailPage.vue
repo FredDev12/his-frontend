@@ -180,7 +180,7 @@
             <BaseButton
               variant="danger"
               class="w-full"
-              @click="deleteConsultation"
+              @click="deleteConsultations"
               v-if="canDelete"
             >
               Supprimer
@@ -239,7 +239,7 @@ const printConsultation = () => {
   window.print()
 }
 
-const deleteConsultation = async () => {
+const deleteConsultations = async () => {
   if (confirm('Êtes-vous sûr de vouloir supprimer cette consultation ?')) {
     try {
       await deleteConsultation(route.params.id)

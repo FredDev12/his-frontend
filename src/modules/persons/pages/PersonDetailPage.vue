@@ -2,7 +2,7 @@
 
 import { onMounted, ref, computed } from "vue"
 import { useRoute } from "vue-router"
-import api from "@/services/api" // adapte selon ton projet
+//import api from "@/services/api" // adapte selon ton projet
 
 const route = useRoute()
 
@@ -16,8 +16,8 @@ onMounted(async () => {
   loading.value = true
 
   try {
-    const res = await api.get(`/persons/${personId}`)
-    person.value = res.data
+    //const res = await api.get(`/persons/${personId}`)
+    //person.value = res.data
   } catch (e) {
     console.error(e)
   } finally {
