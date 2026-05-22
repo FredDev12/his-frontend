@@ -1,75 +1,81 @@
-import { defineConfig } from "vite"
-import vue from "@vitejs/plugin-vue"
-import tailwindcss from "@tailwindcss/vite"
-import { visualizer } from "rollup-plugin-visualizer"
-import viteCompression from "vite-plugin-compression"
-import path from "path"
+import { fileURLToPath, URL } from 'node:url'
+
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import vueJsx from '@vitejs/plugin-vue-jsx'
+import vueDevTools from 'vite-plugin-vue-devtools'
+import tailwindcss from '@tailwindcss/vite'
+import { visualizer } from 'rollup-plugin-visualizer'
+import viteCompression from 'vite-plugin-compression'
+import path from 'path'
 
 export default defineConfig({
   plugins: [
     vue(),
+    vueJsx(),
+    vueDevTools(),
     tailwindcss(),
-
     visualizer({
       open: true,
       gzipSize: true,
-      brotliSize: true
+      brotliSize: true,
     }),
 
     viteCompression({
-      algorithm: "brotliCompress",
-      ext: ".br"
-    })
+      algorithm: 'brotliCompress',
+      ext: '.br',
+    }),
   ],
+  ase: '/',
 
-  base: "/",
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
 
   server: {
     port: 5173,
     hmr: {
-      overlay: false
-    }
+      overlay: false,
+    },
+    proxy: {
+      '/api': {
+        target: 'https://hopital.congoastral-app.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
-  resolve:{
-    alias:{
-      "@": path.resolve(__dirname, "./src")
-    }
-  },
-
   build: {
-    target: "esnext",
-    minify: "esbuild",
+    target: 'esnext',
+    minify: 'esbuild',
     chunkSizeWarningLimit: 800,
 
     rollupOptions: {
       output: {
         manualChunks(id) {
-
-          if (id.includes("node_modules")) {
-
-            if (id.includes("vue")) {
-              return "vue"
+          if (id.includes('node_modules')) {
+            if (id.includes('vue')) {
+              return 'vue'
             }
 
-            if (id.includes("firebase")) {
-              return "firebase"
+            if (id.includes('firebase')) {
+              return 'firebase'
             }
 
-            if (
-              id.includes("jspdf") ||
-              id.includes("html2canvas")
-            ) {
-              return "pdf"
+            if (id.includes('jspdf') || id.includes('html2canvas')) {
+              return 'pdf'
             }
 
-            return "vendor"
+            return 'vendor'
           }
-        }
-      }
-    }
+        },
+      },
+    },
   },
 
   optimizeDeps: {
-    include: ["vue"]
-  }
+    include: ['vue'],
+  },
 })

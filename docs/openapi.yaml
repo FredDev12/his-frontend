@@ -1,0 +1,2124 @@
+openapi: 3.0.3
+
+info:
+  title: HIS CAC API
+  version: 1.0.0
+  description: >
+    Documentation officielle de l’API du Système d’Information Hospitalier CAC.
+    Le workflow patient utilise le numero_fiche comme identifiant principal du passage,
+    tandis que numero_patient identifie la personne de manière permanente.
+
+servers:
+  - url: /api
+    description: API locale via proxy frontend
+  - url: https://hopital.congoastral-app.com/api
+    description: API production
+
+security:
+  - bearerAuth: []
+  - cookieAuth: []
+
+tags:
+  - name: Auth
+  - name: Patients
+  - name: Fiches
+  - name: Receptions
+  - name: Triage
+  - name: Consultations
+  - name: Laboratoire
+  - name: Imagerie
+  - name: Pharmacie
+  - name: Stock pharmacie
+  - name: Caisse
+  - name: Facturation
+  - name: Sorties
+  - name: Agents CAC
+  - name: Services catalog
+  - name: Users
+  - name: Audit
+  - name: Notifications
+  - name: Administration
+  - name: Status Socket
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Connexion utilisateur
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Utilisateur connecté
+      responses:
+        '200':
+          description: Utilisateur courant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /patients:
+    get:
+      tags: [Patients]
+      summary: Liste des patients
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Recherche par nom, numéro patient, numéro fiche ou téléphone.
+        - name: numero_fiche
+          in: query
+          schema:
+            type: string
+          description: Recherche directe par numéro de fiche.
+      responses:
+        '200':
+          description: Patients récupérés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientListResponse'
+
+    post:
+      tags: [Patients]
+      summary: Créer un patient ou une fiche patient
+      description: >
+        Crée un patient et/ou une fiche de passage.
+        numero_patient identifie la personne.
+        numero_fiche identifie le passage courant.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientCreateRequest'
+      responses:
+        '201':
+          description: Patient créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /patients/{id}:
+    get:
+      tags: [Patients]
+      summary: Détail patient
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Patient récupéré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Patients]
+      summary: Modifier patient
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientCreateRequest'
+      responses:
+        '200':
+          description: Patient modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientResponse'
+
+    delete:
+      tags: [Patients]
+      summary: Désactiver patient
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Patient désactivé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /patients/fiche/{numeroFiche}:
+    get:
+      tags: [Fiches]
+      summary: Rechercher une fiche patient par numero_fiche
+      parameters:
+        - name: numeroFiche
+          in: path
+          required: true
+          schema:
+            type: string
+          example: FIC-000120
+      responses:
+        '200':
+          description: Fiche récupérée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FicheResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /fiches/{numeroFiche}/timeline:
+    get:
+      tags: [Fiches]
+      summary: Timeline complète d’une fiche patient
+      parameters:
+        - name: numeroFiche
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Timeline de la fiche
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FicheTimelineResponse'
+
+  /receptions:
+    get:
+      tags: [Receptions]
+      summary: Liste des réceptions
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: Réceptions récupérées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceptionListResponse'
+
+    post:
+      tags: [Receptions]
+      summary: Créer une réception
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceptionRequest'
+      responses:
+        '201':
+          description: Réception créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceptionResponse'
+
+  /receptions/{id}:
+    get:
+      tags: [Receptions]
+      summary: Détail réception
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Réception récupérée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceptionResponse'
+
+    put:
+      tags: [Receptions]
+      summary: Modifier réception
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceptionRequest'
+      responses:
+        '200':
+          description: Réception modifiée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceptionResponse'
+
+    delete:
+      tags: [Receptions]
+      summary: Supprimer réception
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Réception supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /receptions/{id}/payment:
+    post:
+      tags: [Receptions]
+      summary: Valider paiement réception
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: Paiement réception validé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceptionResponse'
+
+  /triage:
+    get:
+      tags: [Triage]
+      summary: Liste triage
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: Triage récupéré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriageListResponse'
+
+    post:
+      tags: [Triage]
+      summary: Créer triage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriageRequest'
+      responses:
+        '201':
+          description: Triage créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriageResponse'
+
+  /triage/{id}:
+    get:
+      tags: [Triage]
+      summary: Détail triage
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Triage récupéré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriageResponse'
+
+    put:
+      tags: [Triage]
+      summary: Modifier triage
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriageRequest'
+      responses:
+        '200':
+          description: Triage modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriageResponse'
+
+    delete:
+      tags: [Triage]
+      summary: Supprimer triage
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Triage supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /consultations:
+    get:
+      tags: [Consultations]
+      summary: Liste consultations
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: Consultations récupérées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericListResponse'
+
+    post:
+      tags: [Consultations]
+      summary: Créer consultation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultationRequest'
+      responses:
+        '201':
+          description: Consultation créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /consultations/{id}:
+    get:
+      tags: [Consultations]
+      summary: Détail consultation
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Consultation récupérée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    put:
+      tags: [Consultations]
+      summary: Modifier consultation
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultationRequest'
+      responses:
+        '200':
+          description: Consultation modifiée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    delete:
+      tags: [Consultations]
+      summary: Supprimer consultation
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Consultation supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /laboratoire:
+    get:
+      tags: [Laboratoire]
+      summary: Liste demandes laboratoire
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: Demandes laboratoire récupérées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericListResponse'
+
+    post:
+      tags: [Laboratoire]
+      summary: Créer demande laboratoire
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LaboratoireRequest'
+      responses:
+        '201':
+          description: Demande laboratoire créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /laboratoire/{id}:
+    get:
+      tags: [Laboratoire]
+      summary: Détail demande laboratoire
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Demande laboratoire récupérée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    put:
+      tags: [Laboratoire]
+      summary: Modifier demande laboratoire
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LaboratoireRequest'
+      responses:
+        '200':
+          description: Demande laboratoire modifiée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    delete:
+      tags: [Laboratoire]
+      summary: Supprimer demande laboratoire
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Demande laboratoire supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /imagerie:
+    get:
+      tags: [Imagerie]
+      summary: Liste demandes imagerie
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: Demandes imagerie récupérées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericListResponse'
+
+    post:
+      tags: [Imagerie]
+      summary: Créer demande imagerie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImagerieRequest'
+      responses:
+        '201':
+          description: Demande imagerie créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /imagerie/{id}:
+    get:
+      tags: [Imagerie]
+      summary: Détail demande imagerie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Demande imagerie récupérée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    put:
+      tags: [Imagerie]
+      summary: Modifier demande imagerie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImagerieRequest'
+      responses:
+        '200':
+          description: Demande imagerie modifiée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    delete:
+      tags: [Imagerie]
+      summary: Supprimer demande imagerie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Demande imagerie supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /pharmacie:
+    get:
+      tags: [Pharmacie]
+      summary: Liste prescriptions pharmacie
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: Prescriptions récupérées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericListResponse'
+
+    post:
+      tags: [Pharmacie]
+      summary: Créer prescription pharmacie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PharmacieRequest'
+      responses:
+        '201':
+          description: Prescription créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /pharmacie/{id}:
+    get:
+      tags: [Pharmacie]
+      summary: Détail prescription pharmacie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Prescription récupérée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    patch:
+      tags: [Pharmacie]
+      summary: Modifier ou délivrer prescription pharmacie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PharmacieRequest'
+      responses:
+        '200':
+          description: Prescription modifiée ou délivrée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    delete:
+      tags: [Pharmacie]
+      summary: Supprimer prescription pharmacie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Prescription supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /pharmacie/stock:
+    get:
+      tags: [Stock pharmacie]
+      summary: Liste produits stock pharmacie
+      responses:
+        '200':
+          description: Stock récupéré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericListResponse'
+
+    post:
+      tags: [Stock pharmacie]
+      summary: Créer produit stock pharmacie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockProductRequest'
+      responses:
+        '201':
+          description: Produit créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /pharmacie/stock/{id}/movements:
+    post:
+      tags: [Stock pharmacie]
+      summary: Créer mouvement de stock
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockMovementRequest'
+      responses:
+        '200':
+          description: Mouvement enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /paiements:
+    get:
+      tags: [Caisse]
+      summary: Liste paiements
+      responses:
+        '200':
+          description: Paiements récupérés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericListResponse'
+
+    post:
+      tags: [Caisse]
+      summary: Créer paiement caisse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaiementRequest'
+      responses:
+        '201':
+          description: Paiement créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /paiements/{id}:
+    get:
+      tags: [Caisse]
+      summary: Détail paiement
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Paiement récupéré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    patch:
+      tags: [Caisse]
+      summary: Modifier, valider ou annuler paiement
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaiementRequest'
+      responses:
+        '200':
+          description: Paiement mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    delete:
+      tags: [Caisse]
+      summary: Supprimer paiement
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Paiement supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /factures:
+    get:
+      tags: [Facturation]
+      summary: Liste factures
+      responses:
+        '200':
+          description: Factures récupérées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericListResponse'
+
+    post:
+      tags: [Facturation]
+      summary: Créer facture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FactureRequest'
+      responses:
+        '201':
+          description: Facture créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /factures/{id}/issue:
+    post:
+      tags: [Facturation]
+      summary: Émettre facture
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Facture émise
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /factures/{id}/cancel:
+    post:
+      tags: [Facturation]
+      summary: Annuler facture
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Facture annulée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /sorties:
+    get:
+      tags: [Sorties]
+      summary: Liste sorties patient
+      responses:
+        '200':
+          description: Sorties récupérées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericListResponse'
+
+    post:
+      tags: [Sorties]
+      summary: Créer sortie patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SortieRequest'
+      responses:
+        '201':
+          description: Sortie créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /sorties/{id}:
+    get:
+      tags: [Sorties]
+      summary: Détail sortie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Sortie récupérée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    patch:
+      tags: [Sorties]
+      summary: Modifier, valider ou annuler sortie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Sortie mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+    delete:
+      tags: [Sorties]
+      summary: Supprimer sortie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Sortie supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /agents:
+    get:
+      tags: [Agents CAC]
+      summary: Liste agents CAC
+      parameters:
+        - $ref: '#/components/parameters/SearchParam'
+        - name: fonction
+          in: query
+          schema:
+            type: string
+        - name: cac_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agents récupérés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericListResponse'
+
+  /agents/{cacId}/beneficiaries/{relation}/patient-file:
+    post:
+      tags: [Agents CAC]
+      summary: Créer ou ouvrir fiche patient pour bénéficiaire agent CAC
+      parameters:
+        - name: cacId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: relation
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [SELF, SPOUSE, CHILD, PARENT]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentBeneficiaryPatientFileRequest'
+      responses:
+        '200':
+          description: Fiche existante ou créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientResponse'
+
+  /services-catalog:
+    get:
+      tags: [Services catalog]
+      summary: Liste services/modules facturables
+      responses:
+        '200':
+          description: Services récupérés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCatalogListResponse'
+
+    post:
+      tags: [Services catalog]
+      summary: Créer service/module facturable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCatalogRequest'
+      responses:
+        '201':
+          description: Service créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCatalogResponse'
+
+  /services-catalog/{id}:
+    get:
+      tags: [Services catalog]
+      summary: Détail service/module facturable
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Service récupéré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCatalogResponse'
+
+    put:
+      tags: [Services catalog]
+      summary: Modifier service/module facturable
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCatalogRequest'
+      responses:
+        '200':
+          description: Service modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCatalogResponse'
+
+    delete:
+      tags: [Services catalog]
+      summary: Supprimer service/module facturable
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Service supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /services-catalog/{id}/status:
+    patch:
+      tags: [Services catalog]
+      summary: Activer ou désactiver service/module facturable
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [statut]
+              properties:
+                statut:
+                  type: string
+                  enum: [active, inactive, archived]
+      responses:
+        '200':
+          description: Statut modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCatalogResponse'
+
+  /audit:
+    get:
+      tags: [Audit]
+      summary: Liste audit
+      responses:
+        '200':
+          description: Audit récupéré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditListResponse'
+
+    post:
+      tags: [Audit]
+      summary: Créer trace audit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditEvent'
+      responses:
+        '201':
+          description: Audit créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSingleResponse'
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Liste notifications
+      responses:
+        '200':
+          description: Notifications récupérées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericListResponse'
+
+  /notifications/{id}/read:
+    patch:
+      tags: [Notifications]
+      summary: Marquer une notification comme lue
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Notification lue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Tout marquer comme lu
+      responses:
+        '200':
+          description: Notifications lues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /admin/route-test:
+    post:
+      tags: [Administration]
+      summary: Tester une route API depuis la console admin
+      description: Route backend future. Le frontend actuel teste directement via axios et audite localement.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRouteTestRequest'
+      responses:
+        '200':
+          description: Résultat du test API
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminRouteTestResponse'
+
+  /{module}/{id}/status:
+    post:
+      tags: [Status Socket]
+      summary: Diffuser un statut temps réel via Socket.IO
+      description: >
+        Route générique documentaire.
+        Les modules supportés sont patients, receptions, triage, consultations,
+        laboratoire, imagerie, pharmacie, caisse, sorties.
+      parameters:
+        - name: module
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - patients
+              - receptions
+              - triage
+              - consultations
+              - laboratoire
+              - imagerie
+              - pharmacie
+              - caisse
+              - sorties
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusBroadcastRequest'
+      responses:
+        '200':
+          description: Statut diffusé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusBroadcastResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /sortie/{id}/status:
+    post:
+      deprecated: true
+      tags: [Status Socket]
+      summary: Ancien alias status sortie
+      description: Utiliser plutôt /sorties/{id}/status.
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusBroadcastRequest'
+      responses:
+        '200':
+          description: Statut diffusé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusBroadcastResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+
+    SearchParam:
+      name: search
+      in: query
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Requête invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Non authentifié
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Accès refusé
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        requestId:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        error:
+          type: string
+        statusCode:
+          type: integer
+        requestId:
+          type: string
+
+    GenericSingleResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: object
+        requestId:
+          type: string
+
+    GenericListResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        requestId:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    LoginResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            accessToken:
+              type: string
+              description: Peut être absent si authentification par cookie HttpOnly.
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        nom:
+          type: string
+        prenom:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        statut:
+          type: string
+
+    UserResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/User'
+
+    PatientIdentity:
+      type: object
+      required: [nom, prenom, sexe]
+      properties:
+        numero_patient:
+          type: string
+          example: PAT-000012
+        nom:
+          type: string
+        postnom:
+          type: string
+        prenom:
+          type: string
+        sexe:
+          type: string
+          enum: [M, F]
+        date_naissance:
+          type: string
+          format: date
+        age:
+          type: integer
+        telephone:
+          type: string
+        adresse:
+          type: string
+        personne_contacter:
+          type: string
+        telephone_urgence:
+          type: string
+        etat_civil:
+          type: string
+        contact_urgence:
+          type: object
+          required: [nom, lien, telephone]
+          properties:
+            nom:
+              type: string
+            lien:
+              type: string
+            telephone:
+              type: string
+
+    PaiementFiche:
+      type: object
+      properties:
+        montant_fiche:
+          type: number
+        paiement_effectue:
+          type: boolean
+        mode_paiement:
+          type: string
+        facture_numero:
+          type: string
+        recu_numero:
+          type: string
+        date_paiement:
+          type: string
+          format: date
+        exonere:
+          type: boolean
+        motif_exoneration:
+          type: string
+
+    AgentCacLink:
+      type: object
+      properties:
+        agent_cac_id:
+          type: string
+          example: CA0014S
+        relation_to_agent:
+          type: string
+          enum: [SELF, SPOUSE, CHILD, PARENT]
+        beneficiary_name:
+          type: string
+        is_agent_beneficiary:
+          type: boolean
+        frais_exoneres:
+          type: boolean
+
+    PatientCreateRequest:
+      type: object
+      required: [identification_patient, status]
+      properties:
+        numero_fiche:
+          type: string
+          example: FIC-000120
+        identification_patient:
+          $ref: '#/components/schemas/PatientIdentity'
+        paiement_fiche:
+          $ref: '#/components/schemas/PaiementFiche'
+        agent_cac:
+          $ref: '#/components/schemas/AgentCacLink'
+        type_relation:
+          type: string
+          enum: [SELF, SPOUSE, CHILD, PARENT, PUBLIC]
+        status:
+          type: string
+          enum: [active, inactive, archived]
+
+    Patient:
+      type: object
+      properties:
+        id:
+          type: integer
+        numero_patient:
+          type: string
+        numero_fiche:
+          type: string
+        nom:
+          type: string
+        postnom:
+          type: string
+        prenom:
+          type: string
+        sexe:
+          type: string
+        telephone:
+          type: string
+        statut:
+          type: string
+        agent_cac:
+          $ref: '#/components/schemas/AgentCacLink'
+
+    PatientResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Patient'
+        requestId:
+          type: string
+
+    PatientListResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patient'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        requestId:
+          type: string
+
+    Fiche:
+      type: object
+      properties:
+        numero_fiche:
+          type: string
+        numero_patient:
+          type: string
+        patient:
+          $ref: '#/components/schemas/Patient'
+        statut:
+          type: string
+        date_ouverture:
+          type: string
+          format: date-time
+        service:
+          type: string
+
+    FicheResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Fiche'
+        requestId:
+          type: string
+
+    FicheTimelineResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            fiche:
+              $ref: '#/components/schemas/Fiche'
+            events:
+              type: array
+              items:
+                type: object
+
+    ReceptionRequest:
+      type: object
+      required: [numero_fiche, type_passage, service_entree]
+      properties:
+        numero_fiche:
+          type: string
+        numero_patient:
+          type: string
+        type_passage:
+          type: string
+          enum: [NEW, CONTROLE, REFERENCE, URGENCE]
+        service_entree:
+          type: string
+        paiement_fiche:
+          $ref: '#/components/schemas/PaiementFiche'
+
+    ReceptionResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: object
+        requestId:
+          type: string
+
+    ReceptionListResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        requestId:
+          type: string
+
+    PaymentRequest:
+      type: object
+      required: [montant, mode_paiement]
+      properties:
+        montant:
+          type: number
+        devise:
+          type: string
+          example: CDF
+        mode_paiement:
+          type: string
+        reference:
+          type: string
+
+    TriageRequest:
+      type: object
+      required: [numero_fiche, type_passage]
+      properties:
+        numero_fiche:
+          type: string
+        numero_patient:
+          type: string
+        signes_vitaux:
+          type: object
+          properties:
+            temperature:
+              type: number
+            tension_arterielle:
+              type: string
+            frequence_cardiaque:
+              type: number
+            frequence_respiratoire:
+              type: number
+            spO2:
+              type: number
+            poids:
+              type: number
+            taille:
+              type: number
+            imc:
+              type: number
+        service_entree:
+          type: string
+        type_passage:
+          type: string
+          enum: [NEW, CONTROLE, REFERENCE, URGENCE]
+        priorite:
+          type: string
+
+    TriageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: object
+        requestId:
+          type: string
+
+    TriageListResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        requestId:
+          type: string
+
+    ConsultationRequest:
+      type: object
+      required: [numero_fiche]
+      properties:
+        numero_fiche:
+          type: string
+        numero_patient:
+          type: string
+        plaintes:
+          type: string
+        anamnese:
+          type: object
+        examen_clinique:
+          type: object
+        diagnostic:
+          type: object
+        plan_prise_en_charge:
+          type: object
+
+    LaboratoireRequest:
+      type: object
+      required: [numero_fiche, examens]
+      properties:
+        numero_fiche:
+          type: string
+        numero_patient:
+          type: string
+        examens:
+          type: array
+          items:
+            type: object
+            properties:
+              examen:
+                type: string
+              date:
+                type: string
+                format: date
+              resultat:
+                type: string
+              valide:
+                type: boolean
+
+    ImagerieRequest:
+      type: object
+      required: [numero_fiche, examens]
+      properties:
+        numero_fiche:
+          type: string
+        numero_patient:
+          type: string
+        examens:
+          type: array
+          items:
+            type: object
+            properties:
+              examen:
+                type: string
+              date:
+                type: string
+                format: date
+              conclusion:
+                type: string
+
+    PharmacieRequest:
+      type: object
+      required: [numero_fiche, medicaments]
+      properties:
+        numero_fiche:
+          type: string
+        numero_patient:
+          type: string
+        medicaments:
+          type: array
+          items:
+            type: object
+            properties:
+              medicament:
+                type: string
+              forme:
+                type: string
+              quantite:
+                type: number
+              lot:
+                type: string
+              delivre:
+                type: boolean
+        pharmacien:
+          type: string
+
+    StockProductRequest:
+      type: object
+      required: [code, nom]
+      properties:
+        code:
+          type: string
+        nom:
+          type: string
+        categorie:
+          type: string
+        quantite:
+          type: number
+        seuil_alerte:
+          type: number
+        prix_unitaire:
+          type: number
+        devise:
+          type: string
+
+    StockMovementRequest:
+      type: object
+      required: [type, quantity]
+      properties:
+        type:
+          type: string
+          enum: [IN, OUT, ADJUST]
+        quantity:
+          type: number
+        reason:
+          type: string
+
+    PaiementRequest:
+      type: object
+      required: [numero_fiche, montant, mode_paiement]
+      properties:
+        numero_fiche:
+          type: string
+        numero_patient:
+          type: string
+        montant:
+          type: number
+        devise:
+          type: string
+        mode_paiement:
+          type: string
+        statut:
+          type: string
+          enum: [draft, validated, cancelled]
+
+    FactureRequest:
+      type: object
+      required: [numero_fiche, lignes]
+      properties:
+        numero_fiche:
+          type: string
+        numero_patient:
+          type: string
+        lignes:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              libelle:
+                type: string
+              quantite:
+                type: number
+              prix_unitaire:
+                type: number
+              remise:
+                type: number
+              total:
+                type: number
+        remise:
+          type: number
+        taxe:
+          type: number
+        total:
+          type: number
+        statut:
+          type: string
+          enum: [draft, issued, paid, cancelled]
+
+    SortieRequest:
+      type: object
+      required: [numero_fiche]
+      properties:
+        numero_fiche:
+          type: string
+        numero_patient:
+          type: string
+        diagnostic_final:
+          type: string
+        traitement_sortie:
+          type: string
+        instructions:
+          type: string
+        date_sortie:
+          type: string
+          format: date
+        signature_responsable:
+          type: string
+        statut:
+          type: string
+          enum: [draft, validated, cancelled]
+
+    AgentBeneficiaryPatientFileRequest:
+      type: object
+      required: [beneficiary_name, relation_to_agent]
+      properties:
+        beneficiary_name:
+          type: string
+        relation_to_agent:
+          type: string
+          enum: [SELF, SPOUSE, CHILD, PARENT]
+        numero_fiche:
+          type: string
+        create_if_missing:
+          type: boolean
+          default: true
+
+    ServiceCatalogRequest:
+      type: object
+      required: [code, nom, module_source]
+      properties:
+        code:
+          type: string
+        nom:
+          type: string
+        categorie:
+          type: string
+        module_source:
+          type: string
+        prix_base:
+          type: number
+        devise:
+          type: string
+          example: CDF
+        remise_autorisee:
+          type: boolean
+        remise_max:
+          type: number
+        necessite_paiement:
+          type: boolean
+        visible_dans_facturation:
+          type: boolean
+        visible_dans_reception:
+          type: boolean
+        statut:
+          type: string
+          enum: [active, inactive, archived]
+        ordre:
+          type: integer
+        description:
+          type: string
+
+    ServiceCatalogResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: object
+        requestId:
+          type: string
+
+    ServiceCatalogListResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        requestId:
+          type: string
+
+    AuditEvent:
+      type: object
+      required: [action, entity]
+      properties:
+        userId:
+          type: integer
+        role:
+          type: string
+        action:
+          type: string
+        entity:
+          type: string
+        entityId:
+          type: string
+        numero_fiche:
+          type: string
+        numero_patient:
+          type: string
+        oldValue:
+          type: object
+        newValue:
+          type: object
+        details:
+          type: object
+        ip:
+          type: string
+        userAgent:
+          type: string
+        requestId:
+          type: string
+        auditLevel:
+          type: string
+          enum: [INFO, WARNING, CRITICAL]
+        createdAt:
+          type: string
+          format: date-time
+
+    AuditListResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        requestId:
+          type: string
+
+    StatusBroadcastRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: TRIAGE_URGENT
+        details:
+          type: object
+          properties:
+            numero_fiche:
+              type: string
+            numero_patient:
+              type: string
+            action:
+              type: string
+            message:
+              type: string
+
+    StatusBroadcastResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Statut diffusé
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+        requestId:
+          type: string
+
+    AdminRouteTestRequest:
+      type: object
+      required: [method, path]
+      properties:
+        method:
+          type: string
+          enum: [GET, POST, PUT, PATCH, DELETE]
+        path:
+          type: string
+          example: /api/patients
+        body:
+          type: object
+
+    AdminRouteTestResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        method:
+          type: string
+        path:
+          type: string
+        status:
+          type: integer
+        durationMs:
+          type: integer
+        data:
+          type: object
+        error:
+          type: string

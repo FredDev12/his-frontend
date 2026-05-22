@@ -1,19 +1,14 @@
-import { createApp } from "vue"
-import { createPinia } from "pinia"
+import './assets/main.css'
 
-import App from "./App.vue"
-import router from "./router"
-import { setupErrorFilter } from './utils/errorFilter'
-import { setupErrorHandler } from './utils/errorHandler'
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 
-import "./style.css"
-
-//setupErrorFilter()
-//setupErrorHandler()
+import App from './App.vue'
+import router from './app/router'
 
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
 
-app.mount("#app")
+app.mount('#app')

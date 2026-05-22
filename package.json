@@ -1,18 +1,24 @@
 {
-  "name": "his-frontend",
-  "private": true,
+  "name": "hopital_cac",
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "deploy": "firebase deploy --only hosting",
     "preview": "vite preview",
+    "test:unit": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "run-s lint:*",
+    "lint:oxlint": "oxlint . --fix",
+    "lint:eslint": "eslint . --fix --cache",
+    "format": "prettier --write --experimental-cli src/",
+    "deploy": "firebase deploy --only hosting",
     "git-push": "npm run build && npm run deploy && git push"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.2.1",
-    "axios": "^1.13.6",
+    "@tailwindcss/vite": "^4.3.0",
+    "axios": "^1.16.0",
     "build": "^0.1.4",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",
@@ -23,15 +29,39 @@
     "pinia": "^3.0.4",
     "run": "^1.5.0",
     "socket.io-client": "^4.8.3",
-    "tailwindcss": "^4.2.1",
+    "swagger-ui-express": "^5.0.1",
+    "tailwindcss": "^4.3.0",
     "vite-plugin-compression": "^0.5.1",
-    "vue": "^3.5.30",
-    "vue-router": "^5.0.3"
+    "vue": "^3.5.32",
+    "vue-router": "^5.0.4",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.4",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.59.1",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "@vitejs/plugin-vue-jsx": "^5.1.5",
+    "@vitest/eslint-plugin": "^1.6.16",
+    "@vue/test-utils": "^2.4.6",
+    "esbuild": "^0.28.0",
+    "eslint": "^10.2.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-oxlint": "~1.60.0",
+    "eslint-plugin-playwright": "^2.10.1",
+    "eslint-plugin-vue": "~10.8.0",
     "gh-pages": "^6.3.0",
+    "globals": "^17.5.0",
+    "jsdom": "^29.0.2",
+    "npm-run-all2": "^8.0.4",
+    "oxlint": "~1.60.0",
+    "prettier": "3.8.3",
     "rollup-plugin-visualizer": "^7.0.1",
-    "vite": "^7.3.1"
+    "vite": "^8.0.8",
+    "vite-plugin-vue-devtools": "^8.1.1",
+    "vitest": "^4.1.4"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   }
 }
