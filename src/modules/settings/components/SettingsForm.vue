@@ -72,12 +72,12 @@ watch(
 
     form.general = {
       ...form.general,
-      ...(value.general || {}),
+      ...value.general,
     }
 
     form.workflow = {
       ...form.workflow,
-      ...(value.workflow || {}),
+      ...value.workflow,
     }
 
     form.payment_modes = [...(value.payment_modes || [])]

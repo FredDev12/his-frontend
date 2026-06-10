@@ -1,4 +1,6 @@
 <script setup>
+defineOptions({ name: 'AppSidebar' })
+
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'

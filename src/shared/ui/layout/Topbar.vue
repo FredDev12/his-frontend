@@ -1,4 +1,6 @@
 <script setup>
+defineOptions({ name: 'AppTopbar' })
+
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import BaseButton from '@/shared/ui/base/BaseButton.vue'

@@ -7,8 +7,6 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
 import viteCompression from 'vite-plugin-compression'
-import path from 'path'
-
 export default defineConfig({
   plugins: [
     vue(),
@@ -26,7 +24,7 @@ export default defineConfig({
       ext: '.br',
     }),
   ],
-  ase: '/',
+  base: '/',
 
   resolve: {
     alias: {

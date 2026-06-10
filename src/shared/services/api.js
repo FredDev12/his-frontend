@@ -1,8 +1,33 @@
 import axios from 'axios'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1'
+
+const CSRF_STORAGE_KEY = 'his_csrf_token'
+const USER_STORAGE_KEY = 'his_user'
+
+export function setCsrfToken(token) {
+  if (token) {
+    sessionStorage.setItem(CSRF_STORAGE_KEY, token)
+  }
+}
+
+export function getCsrfToken() {
+  return sessionStorage.getItem(CSRF_STORAGE_KEY)
+}
+
+export function clearCsrfToken() {
+  sessionStorage.removeItem(CSRF_STORAGE_KEY)
+}
+
+export function clearFrontendSession() {
+  clearCsrfToken()
+  localStorage.removeItem(USER_STORAGE_KEY)
+  localStorage.removeItem('his_access_token')
+}
+
 const api = axios.create({
-  baseURL: 'https://hopital.congoastral-app.com/api',
-  //withCredentials: true,
+  baseURL: API_BASE_URL,
+  withCredentials: true,
   timeout: 15000,
   headers: {
     Accept: 'application/json',
@@ -11,14 +36,18 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('his_access_token')
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
+  const method = String(config.method || 'get').toLowerCase()
 
   config.headers['X-Client'] = 'his-web'
   config.headers['X-Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+  if (['post', 'put', 'patch', 'delete'].includes(method)) {
+    const csrfToken = getCsrfToken()
+
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken
+    }
+  }
 
   return config
 })
@@ -26,11 +55,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const status = error.response?.status
-
-    if (status === 401) {
-      localStorage.removeItem('his_access_token')
-      localStorage.removeItem('his_user')
+    if (error.response?.status === 401) {
+      clearFrontendSession()
     }
 
     return Promise.reject(error)

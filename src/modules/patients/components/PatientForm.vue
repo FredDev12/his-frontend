@@ -122,67 +122,37 @@ watch(
   (patient) => {
     if (!patient) return
 
-    form.numero_patient = patient.numero_patient || ''
-    form.numero_fiche = patient.numero_fiche || ''
-    form.nom = patient.nom || ''
-    form.postnom = patient.postnom || ''
-    form.prenom = patient.prenom || ''
-    form.sexe = patient.sexe || ''
-    form.date_naissance = patient.date_naissance || ''
-    form.age = patient.age || ''
-    form.telephone = patient.telephone || ''
-    form.adresse = patient.adresse || ''
-    form.statut = patient.statut || 'active'
-
-    const raw = patient.raw || {}
-    const identification = raw.identification_patient || {}
-    const paiement = raw.paiement_fiche || {}
-    const agent = raw.agent_cac || {}
+    form.numero_patient = patient.numero_patient || patient.patientCode || ''
+    form.numero_fiche = patient.numero_fiche || patient.patientCode || ''
+    form.nom = patient.nom || patient.lastName || ''
+    form.postnom = patient.postnom || patient.middleName || ''
+    form.prenom = patient.prenom || patient.firstName || ''
+    form.sexe = patient.sexe || patient.gender || ''
+    form.date_naissance = patient.date_naissance || patient.birthDate || ''
+    form.age = patient.age || patient.estimatedAge || ''
+    form.telephone = patient.telephone || patient.phone || ''
+    form.adresse = patient.adresse || patient.address || ''
+    form.statut = patient.statut || patient.status || 'ACTIVE'
 
     form.personne_contacter =
+      patient.emergencyContactName ||
       patient.personne_contacter ||
-      identification.personne_contacter ||
-      identification.contact_urgence?.nom ||
       ''
 
     form.telephone_urgence =
+      patient.emergencyContactPhone ||
       patient.telephone_urgence ||
-      identification.telephone_urgence ||
-      identification.urgence_téléphonique ||
-      identification.contact_urgence?.telephone ||
       ''
 
-    form.lien_contact_urgence =
-      patient.lien_contact_urgence || identification.contact_urgence?.lien || ''
+    form.lien_contact_urgence = patient.lien_contact_urgence || ''
+    form.etat_civil = patient.etat_civil || ''
 
-    form.etat_civil =
-      patient.etat_civil || identification.etat_civil || identification.état_civil || ''
-
-    form.montant_fiche = patient.montant_fiche ?? paiement.montant_fiche ?? 0
-    form.paiement_effectue = Boolean(
-      patient.paiement_effectue ??
-      paiement.paiement_effectue ??
-      paiement.paiement_effectuer ??
-      false,
-    )
-
-    form.mode_paiement = patient.mode_paiement || paiement.mode_paiement || ''
-
-    form.agent_cac_id = patient.agent_cac_id || agent.agent_cac_id || ''
-    form.type_relation =
-      patient.type_relation ||
-      raw.type_relation ||
-      agent.relation_to_agent ||
-      agent.relation_a_agent ||
-      agent.relation_à_agent ||
-      ''
+    form.agent_cac_id = patient.agentReference || patient.agent_cac_id || ''
+    form.type_relation = patient.relationToAgent || patient.type_relation || ''
 
     form.nom_du_beneficiaire =
       patient.nom_du_beneficiaire ||
-      agent.beneficiary_name ||
-      agent.nom_du_beneficiaire ||
-      agent.nom_du_bénéficiaire ||
-      ''
+      [form.nom, form.postnom, form.prenom].filter(Boolean).join(' ')
   },
   {
     immediate: true,
@@ -216,83 +186,46 @@ function clearErrors() {
 function validate() {
   clearErrors()
 
-  if (!form.numero_patient) errors.numero_patient = 'Numéro patient obligatoire.'
-  if (!form.numero_fiche) errors.numero_fiche = 'Numéro fiche obligatoire.'
   if (!form.nom) errors.nom = 'Nom obligatoire.'
   if (!form.prenom) errors.prenom = 'Prénom obligatoire.'
   if (!form.sexe) errors.sexe = 'Sexe obligatoire.'
-  if (!form.age) errors.age = 'Âge obligatoire.'
+
+  if (!form.date_naissance && !form.age) {
+    errors.date_naissance = 'Date de naissance ou âge obligatoire.'
+    errors.age = 'Date de naissance ou âge obligatoire.'
+  }
+
   if (!form.telephone) errors.telephone = 'Téléphone obligatoire.'
   if (!form.adresse) errors.adresse = 'Adresse obligatoire.'
-  if (!form.etat_civil) errors.etat_civil = 'État civil obligatoire.'
-  if (!form.lien_contact_urgence) {
-    errors.lien_contact_urgence = 'Lien avec le patient obligatoire.'
-  }
+
   return Object.values(errors).every((value) => !value)
 }
 
 function buildPayload() {
-  const now = new Date().toISOString()
-  const today = new Date().toISOString().split('T')[0]
-
-  const relation = form.type_relation || 'SELF'
-
-  const contactUrgenceNom = form.personne_contacter || 'Non spécifié'
-  const contactUrgenceLien = form.lien_contact_urgence || 'Famille'
-  const contactUrgenceTelephone = form.telephone_urgence || form.telephone || 'Non spécifié'
-
-  const agentConfirmed = Boolean(form.agent_cac_id)
-
-  return {
-    identification_patient: {
-      numero_patient: form.numero_patient || form.numero_fiche,
-      nom: form.nom,
-      postnom: form.postnom || '',
-      prenom: form.prenom,
-      sexe: form.sexe,
-      date_naissance: form.date_naissance || null,
-      age: Number(form.age) || 0,
-      telephone: form.telephone,
-      adresse: form.adresse,
-      personne_contacter: contactUrgenceNom,
-      telephone_urgence: contactUrgenceTelephone,
-      etat_civil: form.etat_civil || 'Célibataire',
-
-      contact_urgence: {
-        nom: contactUrgenceNom,
-        lien: contactUrgenceLien,
-        telephone: contactUrgenceTelephone,
-      },
-    },
-
-    paiement_fiche: {
-      montant_fiche: agentConfirmed ? 0 : Number(form.montant_fiche) || 0,
-      paiement_effectue: agentConfirmed ? true : Boolean(form.paiement_effectue),
-      mode_paiement: agentConfirmed ? 'AGENT_CAC' : form.mode_paiement || 'CASH',
-      facture_numero: agentConfirmed ? 'AGENT-CAC' : 'N/A',
-      recu_numero: agentConfirmed ? 'AGENT-CAC' : 'N/A',
-      date_paiement: today,
-      exonere: agentConfirmed,
-      motif_exoneration: agentConfirmed ? 'BENEFICIAIRE_AGENT_CAC' : '',
-    },
-
-    agent_cac: agentConfirmed
-      ? {
-          agent_cac_id: String(form.agent_cac_id),
-          relation_to_agent: relation,
-          beneficiary_name:
-            form.nom_du_beneficiaire ||
-            [form.nom, form.postnom, form.prenom].filter(Boolean).join(' '),
-          is_agent_beneficiary: true,
-          frais_exoneres: true,
-        }
-      : {},
-
-    created_at: props.initialValue?.raw?.created_at || now,
-    numero_fiche: form.numero_fiche,
-    type_relation: agentConfirmed ? relation : '',
-    status: form.statut || 'active',
+  const payload = {
+    firstName: form.prenom,
+    lastName: form.nom,
+    middleName: form.postnom || null,
+    gender: form.sexe,
+    birthDate: form.date_naissance || null,
+    estimatedAge: form.date_naissance ? null : Number(form.age) || null,
+    phone: form.telephone || null,
+    address: form.adresse || null,
+    type: form.agent_cac_id ? 'AGENT_CAC' : 'PUBLIC',
+    agentReference: form.agent_cac_id || null,
+    relationToAgent: form.agent_cac_id ? form.type_relation || 'SELF' : null,
+    emergencyContactName: form.personne_contacter || null,
+    emergencyContactPhone: form.telephone_urgence || null,
+    status: String(form.statut || 'ACTIVE').toUpperCase(),
   }
+
+  Object.keys(payload).forEach((key) => {
+    if (payload[key] === '') {
+      payload[key] = null
+    }
+  })
+
+  return payload
 }
 
 function submit() {
@@ -306,7 +239,7 @@ function submit() {
   <form class="space-y-6" @submit.prevent="submit">
     <BaseCard
       title="Identité du patient"
-      subtitle="Informations civiles indispensables à l’identification du patient."
+      subtitle="Informations civiles indispensables à l'identification du patient."
     >
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <BaseInput
@@ -361,7 +294,7 @@ function submit() {
       </div>
     </BaseCard>
 
-    <BaseCard title="Contact d’urgence" subtitle="Personne à contacter en cas de nécessité.">
+    <BaseCard title="Contact d'urgence" subtitle="Personne à contacter en cas de nécessité.">
       <div class="grid gap-4 md:grid-cols-2">
         <BaseInput v-model="form.personne_contacter" label="Personne à contacter" />
         <BaseSelect
@@ -386,7 +319,7 @@ function submit() {
 
     <BaseCard
       title="Paiement de la fiche"
-      subtitle="Informations financières liées à l’ouverture du dossier."
+      subtitle="Informations financières liées à l'ouverture du dossier."
     >
       <div class="grid gap-4 md:grid-cols-3">
         <BaseInput

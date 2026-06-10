@@ -1,55 +1,85 @@
 import { defineStore } from 'pinia'
-import api from '@/shared/services/api'
+import api, {
+  clearCsrfToken,
+  clearFrontendSession,
+  setCsrfToken,
+} from '@/shared/services/api'
 import { useToastStore } from '@/shared/stores/toast.store'
+
+const USER_STORAGE_KEY = 'his_user'
+
+function normalizeUser(rawUser) {
+  if (!rawUser) return null
+
+  const roleCode =
+    rawUser.roleCode ||
+    rawUser.role?.code ||
+    rawUser.role?.name ||
+    rawUser.role ||
+    null
+
+  return {
+    ...rawUser,
+    firstName: rawUser.firstName || rawUser.prenom || rawUser.prénom || '',
+    lastName: rawUser.lastName || rawUser.nom || '',
+    roleCode,
+    permissions: Array.isArray(rawUser.permissions) ? rawUser.permissions : [],
+  }
+}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     initialized: false,
     loading: false,
     user: null,
-    token: null,
+    csrfToken: null,
   }),
 
   getters: {
-    isAuthenticated: (state) => Boolean(state.user || state.token),
+    isAuthenticated: (state) => Boolean(state.user),
 
     role: (state) => {
-      return state.user?.role || state.user?.rôle || null
+      const roleCode = state.user?.roleCode || null
+      return roleCode ? String(roleCode).toLowerCase() : null
     },
+
+    permissions: (state) => state.user?.permissions || [],
 
     fullName: (state) => {
       if (!state.user) return 'Utilisateur'
 
-      return [state.user.prenom || state.user.prénom, state.user.nom]
+      return [state.user.firstName, state.user.lastName]
         .filter(Boolean)
-        .join(' ')
+        .join(' ') || state.user.email || 'Utilisateur'
+    },
+
+    hasPermission: (state) => {
+      return (permission) => {
+        if (!permission) return true
+        return (state.user?.permissions || []).includes(permission)
+      }
     },
   },
 
   actions: {
     async initialize() {
-      const storedToken = localStorage.getItem('his_access_token')
-      const storedUser = localStorage.getItem('his_user')
-
-      this.token = storedToken
+      const storedUser = localStorage.getItem(USER_STORAGE_KEY)
 
       if (storedUser) {
         try {
-          this.user = JSON.parse(storedUser)
+          this.user = normalizeUser(JSON.parse(storedUser))
         } catch {
           this.user = null
         }
       }
 
-      if (this.token || this.user) {
-        try {
-          await this.fetchProfile()
-        } catch {
-          this.clearSession()
-        }
+      try {
+        await this.fetchProfile()
+      } catch {
+        this.clearSession()
+      } finally {
+        this.initialized = true
       }
-
-      this.initialized = true
     },
 
     async login(credentials) {
@@ -58,25 +88,28 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
 
       try {
-        const response = await api.post('/auth/login', credentials)
-
-        const data = response.data || {}
-        const user = data.user || data.utilisateur || data.data?.user || data.data?.utilisateur
-        const token = data.token || data.accessToken || data.data?.token
-
-        this.user = user || {
+        const response = await api.post('/auth/login', {
           email: credentials.email,
-          role: 'admin',
-          nom: 'Utilisateur',
+          password: credentials.password,
+        })
+
+        const payload = response.data?.data || {}
+        const user = normalizeUser(payload.user)
+        const csrfToken = payload.csrfToken
+
+        if (!user) {
+          throw new Error('Utilisateur absent dans la réponse de connexion.')
         }
 
-        this.token = token || null
+        this.user = user
+        this.csrfToken = csrfToken || null
 
-        if (this.token) {
-          localStorage.setItem('his_access_token', this.token)
+        if (csrfToken) {
+          setCsrfToken(csrfToken)
         }
 
-        localStorage.setItem('his_user', JSON.stringify(this.user))
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
+        localStorage.removeItem('his_access_token')
 
         toast.success('Connexion réussie.')
 
@@ -96,13 +129,17 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async fetchProfile() {
-      const response = await api.get('/auth/profile')
+      const response = await api.get('/auth/me')
 
-      const data = response.data || {}
-      const user = data.user || data.utilisateur || data.data || data
+      const payload = response.data?.data || {}
+      const user = normalizeUser(payload.user)
+
+      if (!user) {
+        throw new Error('Profil utilisateur absent.')
+      }
 
       this.user = user
-      localStorage.setItem('his_user', JSON.stringify(user))
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
 
       return user
     },
@@ -119,10 +156,10 @@ export const useAuthStore = defineStore('auth', {
 
     clearSession() {
       this.user = null
-      this.token = null
+      this.csrfToken = null
 
-      localStorage.removeItem('his_access_token')
-      localStorage.removeItem('his_user')
+      clearCsrfToken()
+      clearFrontendSession()
     },
   },
 })

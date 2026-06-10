@@ -41,17 +41,6 @@ function extractItems(payload, preferredKeys = []) {
   return []
 }
 
-function extractTotal(payload, items = []) {
-  return Number(
-    payload?.pagination?.total ||
-      payload?.meta?.total ||
-      payload?.total ||
-      payload?.count ||
-      items.length ||
-      0,
-  )
-}
-
 function normalizeText(value) {
   return String(value || '')
     .toLowerCase()

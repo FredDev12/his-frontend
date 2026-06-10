@@ -842,9 +842,19 @@ router.beforeEach(async (to) => {
     }
   }
 
-  const allowedRoles = to.meta.roles || []
+  const allowedRoles = Array.isArray(to.meta.roles)
+    ? to.meta.roles.map((role) => String(role).toLowerCase())
+    : []
 
-  if (allowedRoles.length > 0 && !allowedRoles.includes(auth.role)) {
+  const userRole = auth.role ? String(auth.role).toLowerCase() : null
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+    return '/dashboard'
+  }
+
+  const requiredPermission = to.meta.permission
+
+  if (requiredPermission && !auth.hasPermission(requiredPermission)) {
     return '/dashboard'
   }
 

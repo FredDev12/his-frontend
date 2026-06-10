@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import BaseBadge from '@/shared/ui/base/BaseBadge.vue'
 
-const props = defineProps({
+const { alerts } = defineProps({
   alerts: {
     type: Array,
     default: () => [],

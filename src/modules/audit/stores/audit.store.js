@@ -11,9 +11,8 @@ function pick(obj, keys, fallback = '') {
   return fallback
 }
 
-function safeParseJson(value) {
-  if (!value) return null
-
+function safeJson(value) {
+  if (value === null || value === undefined || value === '') return null
   if (typeof value === 'object') return value
 
   if (typeof value === 'string') {
@@ -28,167 +27,66 @@ function safeParseJson(value) {
 }
 
 function normalizeAction(value) {
-  const action = String(value || '')
-    .toUpperCase()
-    .trim()
-
-  const map = {
-    CREATE: 'CREATE',
-    CREATED: 'CREATE',
-    CREATION: 'CREATE',
-
-    UPDATE: 'UPDATE',
-    UPDATED: 'UPDATE',
-    MODIFICATION: 'UPDATE',
-
-    DELETE: 'DELETE',
-    DELETED: 'DELETE',
-    SUPPRESSION: 'DELETE',
-
-    LOGIN: 'LOGIN',
-    LOGOUT: 'LOGOUT',
-
-    VALIDATE: 'VALIDATE',
-    VALIDATED: 'VALIDATE',
-    VALIDATION: 'VALIDATE',
-
-    CANCEL: 'CANCEL',
-    CANCELLED: 'CANCEL',
-    ANNULATION: 'CANCEL',
-
-    RESET_PASSWORD: 'RESET_PASSWORD',
-    PASSWORD_RESET: 'RESET_PASSWORD',
-  }
-
-  return map[action] || action || 'UNKNOWN'
+  return String(value || 'UNKNOWN').toUpperCase().trim()
 }
 
 function normalizeAudit(item) {
   if (!item) return null
 
-  const raw = item
-
-  const ancienneValeur = safeParseJson(
-    pick(raw, ['ancienne_valeur', 'ancienneValeur', 'old_value', 'oldValue', 'before'], null),
-  )
-
-  const nouvelleValeur = safeParseJson(
-    pick(raw, ['nouvelle_valeur', 'nouvelleValeur', 'new_value', 'newValue', 'after'], null),
-  )
-
-  const utilisateur = raw.utilisateur || raw.user || raw.actor || {}
-
   return {
-    raw,
+    raw: item,
 
-    id: pick(raw, ['id', '_id', 'audit_id', 'auditId']),
-    user_id: pick(raw, ['user_id', 'userId'], pick(utilisateur, ['id'])),
-    user_nom: pick(
-      raw,
-      ['user_nom', 'userName', 'nom_utilisateur'],
-      pick(utilisateur, ['nom', 'name']),
-    ),
-    user_email: pick(raw, ['user_email', 'email'], pick(utilisateur, ['email'])),
+    id: String(pick(item, ['id'], '')),
+    user_id: pick(item, ['userId', 'user_id'], ''),
+    user_nom: pick(item, ['userName', 'user_nom'], ''),
+    user_email: pick(item, ['userEmail', 'user_email', 'email'], ''),
 
-    role: pick(raw, ['role', 'user_role', 'userRole'], pick(utilisateur, ['role'])),
+    role: pick(item, ['roleCode', 'role', 'userRole'], ''),
 
-    action: normalizeAction(pick(raw, ['action', 'event', 'operation'], 'UNKNOWN')),
-    entite: pick(raw, ['entite', 'entity', 'entity_name', 'entityName', 'module'], '—'),
-    entite_id: pick(
-      raw,
-      ['entite_id', 'entiteId', 'entity_id', 'entityId', 'record_id', 'recordId'],
-      '',
-    ),
+    action: normalizeAction(pick(item, ['action'], 'UNKNOWN')),
+    entite: pick(item, ['entity', 'entite'], '—'),
+    entite_id: pick(item, ['entityId', 'entite_id', 'entiteId'], ''),
 
-    ancienne_valeur: ancienneValeur,
-    nouvelle_valeur: nouvelleValeur,
+    ancienne_valeur: safeJson(pick(item, ['oldValue', 'ancienne_valeur'], null)),
+    nouvelle_valeur: safeJson(pick(item, ['newValue', 'nouvelle_valeur'], null)),
 
-    ip: pick(raw, ['ip', 'ip_address', 'ipAddress'], ''),
-    user_agent: pick(raw, ['user_agent', 'userAgent'], ''),
-    request_id: pick(raw, ['request_id', 'requestId', 'correlation_id', 'correlationId'], ''),
+    ip: pick(item, ['ipAddress', 'ip', 'ip_address'], ''),
+    user_agent: pick(item, ['userAgent', 'user_agent'], ''),
+    request_id: pick(item, ['requestId', 'request_id'], ''),
 
-    description: pick(raw, ['description', 'message', 'details'], ''),
-    created_at: pick(raw, ['created_at', 'createdAt', 'timestamp', 'date'], ''),
+    description: pick(item, ['description', 'message'], ''),
+    created_at: pick(item, ['createdAt', 'created_at', 'timestamp'], ''),
   }
 }
 
 function normalizeListResponse(payload) {
-  const rawItems =
-    payload?.data ||
-    payload?.audits ||
-    payload?.logs ||
-    payload?.items ||
-    payload?.results ||
-    payload?.resultats ||
-    []
+  const rawItems = payload?.items || payload?.data?.items || payload?.logs || payload?.audits || []
 
   const items = Array.isArray(rawItems) ? rawItems.map(normalizeAudit).filter(Boolean) : []
 
-  const pagination = payload?.pagination || payload?.meta || {}
-
-  const page = Number(payload?.page || pagination.page || pagination.currentPage || 1)
-
-  const limite = Number(
-    payload?.limit ||
-      payload?.limite ||
-      pagination.limit ||
-      pagination.limite ||
-      pagination.perPage ||
-      20,
-  )
-
-  const total = Number(
-    payload?.total ||
-      payload?.count ||
-      pagination.total ||
-      pagination.totalItems ||
-      items.length ||
-      0,
-  )
-
-  const totalPages = Number(
-    payload?.pages ||
-      payload?.totalPages ||
-      pagination.pages ||
-      pagination.totalPages ||
-      Math.ceil(total / limite) ||
-      1,
-  )
+  const page = Number(payload?.page || payload?.data?.page || 1)
+  const limite = Number(payload?.limit || payload?.limite || payload?.data?.limit || 20)
+  const total = Number(payload?.count || payload?.total || payload?.data?.count || items.length || 0)
 
   return {
     items,
     total,
     page,
     limite,
-    hasNext: page < totalPages,
+    hasNext: page * limite < total,
     hasPrev: page > 1,
   }
 }
 
 function normalizeSingleResponse(payload) {
-  const audit =
-    payload?.audit ||
-    payload?.log ||
-    payload?.data ||
-    payload?.données ||
-    payload?.result ||
-    payload
-
-  return normalizeAudit(audit)
-}
-
-function normalizeText(value) {
-  return String(value || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
+  return normalizeAudit(payload?.item || payload?.audit || payload?.log || payload)
 }
 
 export const useAuditStore = defineStore('audit', {
   state: () => ({
     audits: [],
     selectedAudit: null,
+    actions: [],
 
     loading: false,
     loadingDetails: false,
@@ -209,6 +107,8 @@ export const useAuditStore = defineStore('audit', {
       action: '',
       entite: '',
       role: '',
+      dateFrom: '',
+      dateTo: '',
     },
   }),
 
@@ -221,6 +121,12 @@ export const useAuditStore = defineStore('audit', {
         const payload = await auditService.list({
           page: params.page || this.pagination.page,
           limit: params.limit || params.limite || this.pagination.limite,
+          q: params.q ?? this.filters.q,
+          action: params.action ?? this.filters.action,
+          entity: params.entity ?? params.entite ?? this.filters.entite,
+          roleCode: params.roleCode ?? params.role ?? this.filters.role,
+          dateFrom: params.dateFrom ?? this.filters.dateFrom,
+          dateTo: params.dateTo ?? this.filters.dateTo,
         })
 
         const normalized = normalizeListResponse(payload)
@@ -249,76 +155,22 @@ export const useAuditStore = defineStore('audit', {
 
     async searchAudits(filters = {}) {
       this.searching = true
-      this.error = ''
 
       this.filters = {
         q: filters.q ?? '',
         action: filters.action ?? '',
-        entite: filters.entite ?? '',
-        role: filters.role ?? '',
+        entite: filters.entite ?? filters.entity ?? '',
+        role: filters.role ?? filters.roleCode ?? '',
+        dateFrom: filters.dateFrom ?? '',
+        dateTo: filters.dateTo ?? '',
       }
 
       try {
-        await this.fetchAudits({
+        return await this.fetchAudits({
           page: 1,
-          limit: 100,
+          limit: this.pagination.limite,
+          ...this.filters,
         })
-
-        const q = normalizeText(this.filters.q)
-        const action = normalizeText(this.filters.action)
-        const entite = normalizeText(this.filters.entite)
-        const role = normalizeText(this.filters.role)
-
-        const filtered = this.audits.filter((item) => {
-          const searchableText = normalizeText(
-            [
-              item.id,
-              item.user_id,
-              item.user_nom,
-              item.user_email,
-              item.role,
-              item.action,
-              item.entite,
-              item.entite_id,
-              item.ip,
-              item.user_agent,
-              item.request_id,
-              item.description,
-            ].join(' '),
-          )
-
-          const matchesQ = !q || searchableText.includes(q)
-          const matchesAction = !action || normalizeText(item.action) === action
-          const matchesEntite = !entite || normalizeText(item.entite).includes(entite)
-          const matchesRole = !role || normalizeText(item.role) === role
-
-          return matchesQ && matchesAction && matchesEntite && matchesRole
-        })
-
-        this.audits = filtered
-        this.pagination = {
-          page: 1,
-          limite: filtered.length || 20,
-          total: filtered.length,
-          hasNext: false,
-          hasPrev: false,
-        }
-
-        return {
-          items: filtered,
-          total: filtered.length,
-          page: 1,
-          limite: filtered.length || 20,
-          hasNext: false,
-          hasPrev: false,
-        }
-      } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Recherche audit impossible.'
-
-        throw error
       } finally {
         this.searching = false
       }
@@ -338,11 +190,27 @@ export const useAuditStore = defineStore('audit', {
         this.error =
           error.response?.data?.message ||
           error.response?.data?.error ||
-          'Journal d’audit introuvable.'
+          'Audit introuvable.'
 
         throw error
       } finally {
         this.loadingDetails = false
+      }
+    },
+
+    async fetchActions() {
+      this.actions = await auditService.getActions()
+      return this.actions
+    },
+
+    resetFilters() {
+      this.filters = {
+        q: '',
+        action: '',
+        entite: '',
+        role: '',
+        dateFrom: '',
+        dateTo: '',
       }
     },
   },

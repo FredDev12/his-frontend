@@ -1,4 +1,6 @@
 <script setup>
+defineOptions({ name: 'AppSpinner' })
+
 defineProps({
   size: {
     type: String,

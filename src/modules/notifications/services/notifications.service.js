@@ -136,7 +136,7 @@ function mapSocketEvent(eventName, payload = {}) {
   }
 
   return {
-    ...(maps[eventName] || {}),
+    ...maps[eventName],
     ...payload,
   }
 }
@@ -263,16 +263,9 @@ export const notificationsService = {
       }
     }
 
-    const token = localStorage.getItem('his_access_token')
-
     socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       withCredentials: true,
-      auth: token
-        ? {
-            token,
-          }
-        : undefined,
     })
 
     socket.on('connect', () => {

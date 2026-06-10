@@ -14,6 +14,40 @@ function normalizePatient(patient) {
   const identification =
     patient.identification_patient || patient.identificationPatient || patient.patient || patient
 
+  const firstName =
+    patient.firstName ||
+    patient.prenom ||
+    patient.prenom ||
+    identification.firstName ||
+    identification.prenom ||
+    identification.prenom ||
+    ''
+
+  const lastName =
+    patient.lastName ||
+    patient.nom ||
+    identification.lastName ||
+    identification.nom ||
+    ''
+
+  const middleName =
+    patient.middleName ||
+    patient.postnom ||
+    identification.middleName ||
+    identification.postnom ||
+    ''
+
+  const patientCode =
+    patient.patientCode ||
+    patient.numero_patient ||
+    patient.numero_patient ||
+    patient.numeroPatient ||
+    patient.code ||
+    identification.patientCode ||
+    identification.numero_patient ||
+    identification.numero_patient ||
+    'Â'
+
   return {
     raw: patient,
 
@@ -25,51 +59,84 @@ function normalizePatient(patient) {
       identification.identifiant ||
       identification.patient_id,
 
-    numero_patient:
-      identification.numero_patient ||
-      identification.numéro_patient ||
-      patient.numero_patient ||
-      patient.numéro_patient ||
-      patient.numeroPatient ||
-      patient.code ||
-      '—',
+    uuid: patient.uuid || identification.uuid || '',
 
-    numero_fiche:
-      patient.numero_fiche || patient.numéro_fiche || patient.fiche || patient.reference || '—',
+    numero_patient: patientCode,
+    numero_fiche: patientCode,
 
-    nom: identification.nom || patient.nom || '',
-    postnom: identification.postnom || patient.postnom || '',
-    prenom:
-      identification.prenom || identification.prénom || patient.prenom || patient.prénom || '',
+    nom: lastName,
+    postnom: middleName,
+    prenom: firstName,
 
-    sexe: identification.sexe || patient.sexe || '—',
+    sexe: patient.gender || patient.sexe || identification.gender || identification.sexe || 'Â',
 
     date_naissance:
-      identification.date_naissance ||
-      identification.dateNaissance ||
+      patient.birthDate ||
       patient.date_naissance ||
       patient.dateNaissance ||
+      identification.birthDate ||
+      identification.date_naissance ||
+      identification.dateNaissance ||
       '',
 
-    age: identification.age || identification.âge || patient.age || patient.âge || '',
+    age:
+      patient.estimatedAge ||
+      patient.age ||
+      patient.age ||
+      identification.estimatedAge ||
+      identification.age ||
+      identification.age ||
+      '',
 
     telephone:
-      identification.telephone ||
-      identification.téléphone ||
+      patient.phone ||
       patient.telephone ||
-      patient.téléphone ||
+      patient.telephone ||
+      identification.phone ||
+      identification.telephone ||
+      identification.telephone ||
       '',
 
-    adresse: identification.adresse || patient.adresse || '',
+    adresse:
+      patient.address ||
+      patient.adresse ||
+      identification.address ||
+      identification.adresse ||
+      '',
 
-    statut: patient.statut || patient.status || 'actif',
+    type: patient.type || 'PUBLIC',
+
+    emergencyContactName:
+      patient.emergencyContactName ||
+      patient.personne_contacter ||
+      patient.contact_urgence?.nom ||
+      identification.emergencyContactName ||
+      identification.personne_contacter ||
+      identification.contact_urgence?.nom ||
+      '',
+
+    emergencyContactPhone:
+      patient.emergencyContactPhone ||
+      patient.telephone_urgence ||
+      patient.contact_urgence?.telephone ||
+      identification.emergencyContactPhone ||
+      identification.telephone_urgence ||
+      identification.contact_urgence?.telephone ||
+      '',
+
+    statut: patient.status || patient.statut || 'ACTIVE',
 
     created_at:
-      patient.created_at ||
       patient.createdAt ||
-      patient.créé_à ||
+      patient.created_at ||
+      patient.cree||
       patient.date_creation ||
       patient.dateCreation ||
+      '',
+
+    updated_at:
+      patient.updatedAt ||
+      patient.updated_at ||
       '',
 
     paiement_fiche: patient.paiement_fiche || patient.paiementFiche || {},
@@ -78,35 +145,35 @@ function normalizePatient(patient) {
 }
 
 function normalizeListResponse(payload) {
+  const container = payload?.data || payload
+
   const rawItems =
-    payload?.data ||
-    payload?.données ||
-    payload?.patients ||
-    payload?.items ||
-    payload?.resultats ||
-    payload?.résultats ||
-    payload?.results ||
-    payload
+    container?.items ||
+    container?.patients ||
+    container?.results ||
+    container?.resultats ||
+    container?.resultats ||
+    []
 
   const items = Array.isArray(rawItems) ? rawItems.map(normalizePatient).filter(Boolean) : []
 
-  const pagination = payload?.pagination || payload?.meta || {}
-
   return {
     items,
-    total: Number(payload?.total || pagination.total || items.length || 0),
-    page: Number(payload?.page || pagination.page || 1),
-    limite: Number(
-      payload?.limit || payload?.limite || pagination.limit || pagination.limite || 10,
-    ),
-    hasNext: Boolean(payload?.hasNext || pagination.hasNext),
-    hasPrev: Boolean(payload?.hasPrev || pagination.hasPrev),
+    total: Number(container?.count || container?.total || items.length || 0),
+    page: Number(container?.page || 1),
+    limite: Number(container?.limit || container?.limite || 10),
+    hasNext: Number(container?.page || 1) * Number(container?.limit || container?.limite || 10) < Number(container?.count || container?.total || items.length || 0),
+    hasPrev: Number(container?.page || 1) > 1,
   }
 }
 
 function normalizeSingleResponse(payload) {
+  const container = payload?.data || payload
   const patient =
-    payload?.patient || payload?.data || payload?.données || payload?.result || payload
+    container?.item ||
+    container?.patient ||
+    container?.result ||
+    container
 
   return normalizePatient(patient)
 }
@@ -182,8 +249,6 @@ export const usePatientsStore = defineStore('patients', {
       this.error = ''
 
       try {
-        console.log(query)
-
         const payload = await patientsService.search(query.trim())
         const normalized = normalizeListResponse(payload)
 
@@ -233,7 +298,7 @@ export const usePatientsStore = defineStore('patients', {
         const response = await patientsService.create(payload)
         const created = normalizeSingleResponse(response)
 
-        toast.success('Patient créé avec succès.')
+        toast.success('Patient crÃÂ©ÃÂ© avec succÃÂ¨s.')
 
         await statusBroadcastService.broadcastSafe({
           module: HIS_STATUS_MODULES.PATIENTS,
@@ -244,17 +309,15 @@ export const usePatientsStore = defineStore('patients', {
             numero_patient: created?.numero_patient,
             patient: patientFullName(created),
             action: 'PATIENT_CREATED',
-            message: 'Patient créé',
+            message: 'Patient crÃÂ©ÃÂ©',
           },
         })
 
         return created
       } catch (error) {
-        const message = error.response?.data?.message || 'Création du patient impossible.'
+        const message = error.response?.data?.message || 'CrÃÂ©ation du patient impossible.'
         this.error = message
         toast.error(message)
-        console.log(error)
-
         throw error
       } finally {
         this.saving = false
@@ -275,7 +338,7 @@ export const usePatientsStore = defineStore('patients', {
           this.selectedPatient = updated
         }
 
-        toast.success('Patient mis à jour avec succès.')
+        toast.success('Patient mis ÃÂ  jour avec succÃÂ¨s.')
 
         await statusBroadcastService.broadcastSafe({
           module: HIS_STATUS_MODULES.PATIENTS,
@@ -286,13 +349,13 @@ export const usePatientsStore = defineStore('patients', {
             numero_patient: updated?.numero_patient,
             patient: patientFullName(updated),
             action: 'PATIENT_UPDATED',
-            message: 'Patient mis à jour',
+            message: 'Patient mis ÃÂ  jour',
           },
         })
 
         return updated
       } catch (error) {
-        const message = error.response?.data?.message || 'Mise à jour du patient impossible.'
+        const message = error.response?.data?.message || 'Mise ÃÂ  jour du patient impossible.'
         this.error = message
         toast.error(message)
 
@@ -313,7 +376,7 @@ export const usePatientsStore = defineStore('patients', {
 
         this.patients = this.patients.filter((patient) => String(patient.id) !== String(id))
 
-        toast.success('Patient désactivé avec succès.')
+        toast.success('Patient dÃÂ©sactivÃÂ© avec succÃÂ¨s.')
 
         await statusBroadcastService.broadcastSafe({
           module: HIS_STATUS_MODULES.PATIENTS,
@@ -321,11 +384,11 @@ export const usePatientsStore = defineStore('patients', {
           status: HIS_STATUSES.DELETED,
           details: {
             action: 'PATIENT_DEACTIVATED',
-            message: 'Patient désactivé',
+            message: 'Patient dÃÂ©sactivÃÂ©',
           },
         })
       } catch (error) {
-        const message = error.response?.data?.message || 'Désactivation du patient impossible.'
+        const message = error.response?.data?.message || 'DÃÂ©sactivation du patient impossible.'
         this.error = message
         toast.error(message)
 

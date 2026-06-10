@@ -83,3 +83,4 @@ coverage/
 *.pem
 *.key
 *.crt
+node_modules

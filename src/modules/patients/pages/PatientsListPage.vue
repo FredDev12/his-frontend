@@ -56,8 +56,6 @@ async function goToPage(page) {
 
 async function search(query) {
   try {
-    console.log('patientList : ', query)
-
     await store.searchPatients(query)
   } catch (error) {
     console.error('[Patients] Erreur recherche:', error)

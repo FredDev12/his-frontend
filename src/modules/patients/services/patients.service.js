@@ -4,12 +4,17 @@ function unwrapResponse(response) {
   return response?.data ?? response
 }
 
+function unwrapItem(response) {
+  return response?.data?.data?.item || response?.data?.item || response?.data?.data || response?.data
+}
+
 export const patientsService = {
   async list(params = {}) {
     const response = await api.get('/patients', {
       params: {
         page: params.page || 1,
         limit: params.limit || params.limite || 10,
+        q: params.q || undefined,
       },
     })
 
@@ -17,8 +22,10 @@ export const patientsService = {
   },
 
   async search(query) {
-    const response = await api.get('/patients/search', {
+    const response = await api.get('/patients', {
       params: {
+        page: 1,
+        limit: 20,
         q: query,
       },
     })
@@ -31,10 +38,18 @@ export const patientsService = {
     return unwrapResponse(response)
   },
 
+  async getDossier(id) {
+    const response = await api.get(`/patients/${id}/dossier`)
+    return unwrapItem(response)
+  },
+
+  async getTimeline(id) {
+    const response = await api.get(`/patients/${id}/timeline`)
+    return response?.data?.data?.items || response?.data?.items || []
+  },
+
   async create(payload) {
     const response = await api.post('/patients', payload)
-    console.log(response)
-
     return unwrapResponse(response)
   },
 

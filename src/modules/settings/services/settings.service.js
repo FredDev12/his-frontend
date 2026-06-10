@@ -58,11 +58,11 @@ function readSettings() {
       ...parsed,
       general: {
         ...clone(DEFAULT_SETTINGS.general),
-        ...(parsed.general || {}),
+        ...parsed.general,
       },
       workflow: {
         ...clone(DEFAULT_SETTINGS.workflow),
-        ...(parsed.workflow || {}),
+        ...parsed.workflow,
       },
       payment_modes: Array.isArray(parsed.payment_modes)
         ? parsed.payment_modes
