@@ -27,7 +27,9 @@ export const useAuthStore = defineStore("auth", {
       return Array.isArray(state.user?.permissions) ? state.user.permissions : [];
     },
 
-    roleCode: (state) => state.user?.role?.code ?? null,
+    roleCode: (state) => state.user?.role?.code ?? state.user?.roleCode ?? state.user?.role ?? null,
+
+    role: (state) => state.user?.role?.code ?? state.user?.roleCode ?? state.user?.role ?? null,
 
     fullName: (state) => {
       const firstName = state.user?.firstName ?? "";
@@ -115,8 +117,8 @@ export const useAuthStore = defineStore("auth", {
       this.initialized = true
 
       try {
-        if (typeof this.fetchMe === "function") {
-          await this.fetchMe()
+        if (typeof this.loadCurrentUser === "function") {
+          await this.loadCurrentUser()
         }
 
         return this.user
@@ -139,4 +141,7 @@ export const useAuthStore = defineStore("auth", {
 });
 
 export default useAuthStore;
+
+
+
 

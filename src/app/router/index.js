@@ -1055,7 +1055,11 @@ router.beforeEach(async (to) => {
 
   if (to.meta.public) {
     if (auth.isAuthenticated && to.name === 'login') {
-      return '/dashboard'
+      if (to.path === "/dashboard") {
+      return true
+    }
+
+    return "/dashboard"
     }
 
     return true
@@ -1077,19 +1081,28 @@ router.beforeEach(async (to) => {
   const userRole = auth.role ? String(auth.role).toLowerCase() : null
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
-    return '/dashboard'
+    if (to.path === "/dashboard") {
+      return true
+    }
+
+    return "/dashboard"
   }
 
   const requiredPermission = to.meta.permission
 
   if (requiredPermission && !auth.hasPermission(requiredPermission)) {
-    return '/dashboard'
+    if (to.path === "/dashboard") {
+      return true
+    }
+
+    return "/dashboard"
   }
 
   return true
 })
 
 export default router
+
 
 
 
