@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { RouterLink } from 'vue-router'
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import BaseBadge from '@/shared/ui/base/BaseBadge.vue'
@@ -60,7 +60,7 @@ function badgeVariant(tone) {
         </div>
 
         <div class="mt-4">
-          <RouterLink :to="alert.to">
+          <RouterLink v-if="alert.to" :to="alert.to">
             <BaseButton variant="secondary" size="sm"> Consulter </BaseButton>
           </RouterLink>
         </div>
@@ -68,3 +68,4 @@ function badgeVariant(tone) {
     </div>
   </section>
 </template>
+
