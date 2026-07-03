@@ -1,9 +1,10 @@
-<script setup>
+﻿<script setup>
 import { RouterLink } from 'vue-router'
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import ConsultationStatusBadge from '@/modules/consultations/components/ConsultationStatusBadge.vue'
 
 defineProps({
+  canRemove: { type: Boolean, default: false },
   consultations: {
     type: Array,
     default: () => [],
@@ -116,7 +117,7 @@ function fullName(consultation) {
                   <BaseButton variant="secondary" size="sm"> Modifier </BaseButton>
                 </RouterLink>
 
-                <BaseButton variant="danger" size="sm" @click="$emit('remove', consultation)">
+                <BaseButton variant="danger" size="sm" v-if="canRemove" @click="$emit('remove', consultation)">
                   Supprimer
                 </BaseButton>
               </div>
@@ -172,7 +173,7 @@ function fullName(consultation) {
             <BaseButton variant="secondary" size="sm">Modifier</BaseButton>
           </RouterLink>
 
-          <BaseButton variant="danger" size="sm" @click="$emit('remove', consultation)">
+          <BaseButton variant="danger" size="sm" v-if="canRemove" @click="$emit('remove', consultation)">
             Supprimer
           </BaseButton>
         </div>
@@ -180,3 +181,4 @@ function fullName(consultation) {
     </div>
   </div>
 </template>
+

@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { RouterLink } from 'vue-router'
 
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
@@ -6,6 +6,10 @@ import FactureStatusBadge from '@/modules/facturation/components/FactureStatusBa
 import { formatDateTime } from '@/shared/utils/date'
 
 defineProps({
+  canIssue: { type: Boolean, default: false },
+  canPay: { type: Boolean, default: false },
+  canCancel: { type: Boolean, default: false },
+  canRemove: { type: Boolean, default: false },
   factures: {
     type: Array,
     default: () => [],
@@ -118,33 +122,30 @@ function formatMoney(facture) {
                 </RouterLink>
 
                 <BaseButton
-                  v-if="facture.statut === 'draft'"
                   variant="primary"
                   size="sm"
-                  @click="$emit('issue', facture)"
+                  v-if="canIssue" @click="$emit('issue', facture)"
                 >
                   Émettre
                 </BaseButton>
 
                 <BaseButton
-                  v-if="facture.statut === 'issued'"
                   variant="success"
                   size="sm"
-                  @click="$emit('paid', facture)"
+                  v-if="canPay" @click="$emit('paid', facture)"
                 >
                   Payée
                 </BaseButton>
 
                 <BaseButton
-                  v-if="!['paid', 'cancelled'].includes(facture.statut)"
                   variant="warning"
                   size="sm"
-                  @click="$emit('cancel', facture)"
+                  v-if="canCancel" @click="$emit('cancel', facture)"
                 >
                   Annuler
                 </BaseButton>
 
-                <BaseButton variant="danger" size="sm" @click="$emit('remove', facture)">
+                <BaseButton variant="danger" size="sm" v-if="canRemove" @click="$emit('remove', facture)">
                   Supprimer
                 </BaseButton>
               </div>
@@ -155,3 +156,5 @@ function formatMoney(facture) {
     </div>
   </div>
 </template>
+
+

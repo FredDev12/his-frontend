@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
@@ -10,9 +10,11 @@ import FactureSummaryCards from '@/modules/facturation/components/FactureSummary
 import FactureSearchBar from '@/modules/facturation/components/FactureSearchBar.vue'
 import FactureTable from '@/modules/facturation/components/FactureTable.vue'
 
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useFacturationStore } from '@/modules/facturation/stores/facturation.store'
 import { useToastStore } from '@/shared/stores/toast.store'
 
+const auth = useAuthStore()
 const store = useFacturationStore()
 const toast = useToastStore()
 
@@ -140,7 +142,7 @@ async function confirmRemove() {
         </p>
       </div>
 
-      <RouterLink to="/facturation/create">
+      <RouterLink v-if="auth.hasPermission('facture:create')" to="/facturation/create">
         <BaseButton> Nouvelle facture </BaseButton>
       </RouterLink>
     </header>
@@ -173,10 +175,10 @@ async function confirmRemove() {
       <FactureTable
         :factures="store.factures"
         :loading="store.loading"
-        @issue="openIssue"
-        @paid="openPay"
-        @cancel="openCancel"
-        @remove="openRemove"
+        :can-issue="auth.hasPermission('facture:create')" @issue="openIssue"
+        :can-pay="auth.hasPermission('paiement:create')" @paid="openPay"
+        :can-cancel="auth.hasPermission('facture:cancel')" @cancel="openCancel"
+        :can-remove="auth.hasPermission('facture:cancel')" @remove="openRemove"
       />
 
       <div class="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -253,3 +255,4 @@ async function confirmRemove() {
     />
   </div>
 </template>
+

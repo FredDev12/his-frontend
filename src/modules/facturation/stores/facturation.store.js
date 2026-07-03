@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { facturationService } from '@/modules/facturation/services/facturation.service'
 import { useToastStore } from '@/shared/stores/toast.store'
 import {
@@ -120,6 +120,33 @@ export const useFacturationStore = defineStore('facturation', {
     paidCount: (state) => state.factures.filter((item) => item.statut === 'paid').length,
     cancelledCount: (state) => state.factures.filter((item) => item.statut === 'cancelled').length,
     totalAmount: (state) => state.factures.reduce((sum, item) => sum + Number(item.total || 0), 0),
+
+    financialKpis: (state) => {
+      const items = state.factures || []
+
+      const amountOf = (filterFn) =>
+        items.filter(filterFn).reduce((sum, item) => sum + Number(item.total || 0), 0)
+
+      const isDraft = (item) => item.statut === 'draft'
+      const isIssued = (item) => item.statut === 'issued'
+      const isPaid = (item) => item.statut === 'paid'
+      const isCancelled = (item) => item.statut === 'cancelled'
+      const isUnpaid = (item) => ['draft', 'issued'].includes(item.statut)
+
+      return {
+        total: state.pagination.total || items.length,
+        brouillons: items.filter(isDraft).length,
+        emises: items.filter(isIssued).length,
+        payees: items.filter(isPaid).length,
+        annulees: items.filter(isCancelled).length,
+        impayees: items.filter(isUnpaid).length,
+        totalAmount: amountOf(() => true),
+        paidAmount: amountOf(isPaid),
+        unpaidAmount: amountOf(isUnpaid),
+        cancelledAmount: amountOf(isCancelled),
+        devise: items[0]?.devise || 'CDF',
+      }
+    },
   },
 
   actions: {
@@ -432,3 +459,5 @@ export const useFacturationStore = defineStore('facturation', {
     },
   },
 })
+
+

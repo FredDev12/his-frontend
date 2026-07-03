@@ -1,10 +1,12 @@
-<script setup>
+﻿<script setup>
 import { RouterLink } from 'vue-router'
 
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import PharmacieStatusBadge from '@/modules/pharmacie/components/PharmacieStatusBadge.vue'
 
 defineProps({
+  canDeliver: { type: Boolean, default: false },
+  canRemove: { type: Boolean, default: false },
   prescriptions: {
     type: Array,
     default: () => [],
@@ -194,3 +196,4 @@ function fullName(item) {
     </div>
   </div>
 </template>
+

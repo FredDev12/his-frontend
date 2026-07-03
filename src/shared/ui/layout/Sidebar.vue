@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 defineOptions({ name: 'AppSidebar' })
 
 import { computed } from 'vue'
@@ -26,6 +26,11 @@ const menuGroups = [
         roles: ['admin', 'direction', 'medecin', 'secretaire', 'infirmier', 'caissier'],
       },
       {
+        label: 'Dashboard clinique',
+        to: '/clinical-dashboard',
+        roles: ['admin', 'direction', 'medecin', 'infirmier'],
+      },
+      {
         label: 'Patients',
         to: '/patients',
         roles: ['admin', 'medecin', 'secretaire', 'infirmier'],
@@ -42,6 +47,7 @@ const menuGroups = [
       { label: 'Laboratoire', to: '/laboratoire', roles: ['admin', 'laborantin', 'medecin'] },
       { label: 'Imagerie', to: '/imagerie', roles: ['admin', 'medecin'] },
       { label: 'Sorties', to: '/sorties', roles: ['admin', 'medecin', 'secretaire'] },
+      {label: "Centre de Commande",to: "/command-center",roles: ["admin","direction","medecin","infirmier"]},
     ],
   },
   {
@@ -145,3 +151,4 @@ const visibleGroups = computed(() => {
     </aside>
   </div>
 </template>
+

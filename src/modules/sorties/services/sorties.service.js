@@ -1,51 +1,27 @@
-import api from '@/shared/services/api'
-
-const RESOURCE = '/sortie'
+﻿import api from "@/shared/services/api"
 
 function unwrapResponse(response) {
   return response?.data ?? response
 }
 
-function cleanParams(params = {}) {
-  return Object.fromEntries(
-    Object.entries(params).filter(
-      ([, value]) => value !== undefined && value !== null && value !== '',
-    ),
-  )
-}
-
 export const sortiesService = {
   async list(params = {}) {
-    const limit = params.limit || params.limite || 10
-
-    const response = await api.get(RESOURCE, {
-      params: cleanParams({
-        page: params.page || 1,
-        limit,
-        limite: limit,
-      }),
-    })
-
+    const response = await api.get("/sorties", { params })
     return unwrapResponse(response)
   },
 
   async getById(id) {
-    const response = await api.get(`${RESOURCE}/${id}`)
+    const response = await api.get(`/sorties/${id}`)
     return unwrapResponse(response)
   },
 
   async create(payload) {
-    const response = await api.post(RESOURCE, payload)
+    const response = await api.post("/sorties", payload)
     return unwrapResponse(response)
   },
 
   async update(id, payload) {
-    const response = await api.patch(`${RESOURCE}/${id}`, payload)
-    return unwrapResponse(response)
-  },
-
-  async remove(id) {
-    const response = await api.delete(`${RESOURCE}/${id}`)
+    const response = await api.patch(`/sorties/${id}`, payload)
     return unwrapResponse(response)
   },
 }

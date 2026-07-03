@@ -1,10 +1,11 @@
-<script setup>
+﻿<script setup>
 import { RouterLink } from 'vue-router'
 
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import LaboratoireStatusBadge from '@/modules/laboratoire/components/LaboratoireStatusBadge.vue'
 
 defineProps({
+  canRemove: { type: Boolean, default: false },
   examens: {
     type: Array,
     default: () => [],
@@ -176,3 +177,4 @@ function fullName(item) {
     </div>
   </div>
 </template>
+

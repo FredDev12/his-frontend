@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { laboratoireService } from '@/modules/laboratoire/services/laboratoire.service'
 import { useToastStore } from '@/shared/stores/toast.store'
 import {
@@ -186,6 +186,40 @@ export const useLaboratoireStore = defineStore('laboratoire', {
       statut: '',
     },
   }),
+
+  getters: {
+    laboratoireKpis: (state) => {
+      const items = state.examens || []
+
+      const hasResult = (item) => String(item.resultat || '').trim().length > 0
+
+      const isPending = (item) =>
+        ['pending', 'en_attente', 'attente', 'active'].includes(
+          String(item.statut || '').toLowerCase()
+        )
+
+      const isValidated = (item) =>
+        ['valide', 'validé', 'validated', 'completed', 'termine', 'terminé'].includes(
+          String(item.statut || '').toLowerCase()
+        )
+
+      const isUrgent = (item) =>
+        [item.examen_principal, item.resultat, item.statut]
+          .join(' ')
+          .toLowerCase()
+          .includes('urgent')
+
+      return {
+        total: state.pagination.total || items.length,
+        examensToday: items.length,
+        examensEnAttente: items.filter(isPending).length,
+        examensValides: items.filter(isValidated).length,
+        resultatsDisponibles: items.filter(hasResult).length,
+        urgences: items.filter(isUrgent).length,
+        patientsExamines: new Set(items.map((item) => item.numero_patient).filter(Boolean)).size,
+      }
+    },
+  },
 
   actions: {
     async fetchExamens(params = {}) {
@@ -428,3 +462,4 @@ export const useLaboratoireStore = defineStore('laboratoire', {
     },
   },
 })
+

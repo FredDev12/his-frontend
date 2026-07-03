@@ -1,41 +1,37 @@
-<script setup>
+﻿<script setup>
 defineProps({
   modelValue: {
     type: [String, Number],
-    default: '',
+    default: ""
   },
   label: {
     type: String,
-    default: '',
+    default: ""
   },
   type: {
     type: String,
-    default: 'text',
+    default: "text"
   },
   placeholder: {
     type: String,
-    default: '',
+    default: ""
   },
   error: {
     type: String,
-    default: '',
+    default: ""
   },
   required: {
     type: Boolean,
-    default: false,
-  },
-  autocomplete: {
-    type: String,
-    default: 'off',
-  },
-})
+    default: false
+  }
+});
 
-defineEmits(['update:modelValue'])
+defineEmits(["update:modelValue"]);
 </script>
 
 <template>
   <label class="block">
-    <span v-if="label" class="mb-1.5 block text-sm font-medium text-slate-700">
+    <span v-if="label" class="mb-1 block text-sm font-semibold text-slate-700">
       {{ label }}
       <span v-if="required" class="text-red-600">*</span>
     </span>
@@ -44,14 +40,12 @@ defineEmits(['update:modelValue'])
       :type="type"
       :value="modelValue"
       :placeholder="placeholder"
-      :required="required"
-      :autocomplete="autocomplete"
-      class="block w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 his-focus"
-      :class="error ? 'border-red-300 focus:ring-red-500' : 'border-slate-300'"
+      class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+      :class="{ 'border-red-500 focus:border-red-500 focus:ring-red-100': error }"
       @input="$emit('update:modelValue', $event.target.value)"
     />
 
-    <span v-if="error" class="mt-1.5 block text-sm text-red-600">
+    <span v-if="error" class="mt-1 block text-xs font-medium text-red-600">
       {{ error }}
     </span>
   </label>

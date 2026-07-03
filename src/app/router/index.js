@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 
 import AuthLayout from '@/app/layouts/AuthLayout.vue'
 import AppLayout from '@/app/layouts/AppLayout.vue'
@@ -18,24 +18,28 @@ import PatientDetailsPage from '@/modules/patients/pages/PatientDetailsPage.vue'
 import PatientEditPage from '@/modules/patients/pages/PatientEditPage.vue'
 
 // route Réceptions
+import ReceptionDashboardPage from '@/modules/receptions/pages/ReceptionDashboardPage.vue'
 import ReceptionsListPage from '@/modules/receptions/pages/ReceptionsListPage.vue'
 import ReceptionCreatePage from '@/modules/receptions/pages/ReceptionCreatePage.vue'
 import ReceptionDetailsPage from '@/modules/receptions/pages/ReceptionDetailsPage.vue'
 import ReceptionEditPage from '@/modules/receptions/pages/ReceptionEditPage.vue'
 
 // route Triage
+import TriageDashboardPage from '@/modules/triage/pages/TriageDashboardPage.vue'
 import TriageListPage from '@/modules/triage/pages/TriageListPage.vue'
 import TriageCreatePage from '@/modules/triage/pages/TriageCreatePage.vue'
 import TriageDetailsPage from '@/modules/triage/pages/TriageDetailsPage.vue'
 import TriageEditPage from '@/modules/triage/pages/TriageEditPage.vue'
 
 // route Consultations
+import ConsultationDashboardPage from '@/modules/consultations/pages/ConsultationDashboardPage.vue'
 import ConsultationsListPage from '@/modules/consultations/pages/ConsultationsListPage.vue'
 import ConsultationCreatePage from '@/modules/consultations/pages/ConsultationCreatePage.vue'
 import ConsultationDetailsPage from '@/modules/consultations/pages/ConsultationDetailsPage.vue'
 import ConsultationEditPage from '@/modules/consultations/pages/ConsultationEditPage.vue'
 
 // route Laboratoire
+import LaboratoireDashboardPage from '@/modules/laboratoire/pages/LaboratoireDashboardPage.vue'
 import LaboratoireListPage from '@/modules/laboratoire/pages/LaboratoireListPage.vue'
 import LaboratoireCreatePage from '@/modules/laboratoire/pages/LaboratoireCreatePage.vue'
 import LaboratoireDetailsPage from '@/modules/laboratoire/pages/LaboratoireDetailsPage.vue'
@@ -48,6 +52,7 @@ import ImagerieDetailsPage from '@/modules/imagerie/pages/ImagerieDetailsPage.vu
 import ImagerieEditPage from '@/modules/imagerie/pages/ImagerieEditPage.vue'
 
 // route pharmacie
+import PharmacieDashboardPage from '@/modules/pharmacie/pages/PharmacieDashboardPage.vue'
 import PharmacieListPage from '@/modules/pharmacie/pages/PharmacieListPage.vue'
 import PharmacieCreatePage from '@/modules/pharmacie/pages/PharmacieCreatePage.vue'
 import PharmacieDetailsPage from '@/modules/pharmacie/pages/PharmacieDetailsPage.vue'
@@ -60,8 +65,6 @@ import CaisseDetailsPage from '@/modules/caisse/pages/CaisseDetailsPage.vue'
 import CaisseEditPage from '@/modules/caisse/pages/CaisseEditPage.vue'
 
 // route sortie
-import SortiesListPage from '@/modules/sorties/pages/SortiesListPage.vue'
-import SortieCreatePage from '@/modules/sorties/pages/SortieCreatePage.vue'
 import SortieDetailsPage from '@/modules/sorties/pages/SortieDetailsPage.vue'
 import SortieEditPage from '@/modules/sorties/pages/SortieEditPage.vue'
 
@@ -108,14 +111,21 @@ import PharmacyStockCreatePage from '@/modules/pharmacy-stock/pages/PharmacyStoc
 import PharmacyStockDetailsPage from '@/modules/pharmacy-stock/pages/PharmacyStockDetailsPage.vue'
 import PharmacyStockEditPage from '@/modules/pharmacy-stock/pages/PharmacyStockEditPage.vue'
 
-// route facturation
+// route paiements / caisse
+import CaisseDashboardPage from '@/modules/paiements/pages/CaisseDashboardPage.vue'
+import PaiementsListPage from '@/modules/paiements/pages/PaiementsListPage.vue'
+import PaiementCreatePage from '@/modules/paiements/pages/PaiementCreatePage.vue'
+
+      // route facturation
+import FacturationDashboardPage from '@/modules/facturation/pages/FacturationDashboardPage.vue'
 import FacturesListPage from '@/modules/facturation/pages/FacturesListPage.vue'
 import FactureCreatePage from '@/modules/facturation/pages/FactureCreatePage.vue'
 import FactureDetailsPage from '@/modules/facturation/pages/FactureDetailsPage.vue'
 import FactureEditPage from '@/modules/facturation/pages/FactureEditPage.vue'
 
-// route administration
-import AdministrationPage from '@/modules/administration/pages/AdministrationPage.vue'
+
+  // route centre de commande
+import CommandCenterPage from "@/modules/clinical-dashboard/pages/CommandCenterPage.vue"
 
 const routes = [
   {
@@ -193,6 +203,16 @@ const routes = [
 
       // Routes Réceptions
       {
+        path: 'receptions/dashboard',
+        name: 'receptions.dashboard',
+        component: ReceptionDashboardPage,
+        meta: {
+          title: 'Dashboard Réception',
+          roles: ['admin', 'secretaire', 'infirmier'],
+          permission: 'reception:read',
+        },
+      },
+      {
         path: 'receptions',
         name: 'receptions',
         component: ReceptionsListPage,
@@ -231,6 +251,16 @@ const routes = [
 
       // Routes Triage
       {
+        path: 'triage/dashboard',
+        name: 'triage.dashboard',
+        component: TriageDashboardPage,
+        meta: {
+          title: 'Dashboard Triage',
+          roles: ['admin', 'infirmier', 'medecin'],
+          permission: 'triage:read',
+        },
+      },
+      {
         path: 'triage',
         name: 'triage',
         component: TriageListPage,
@@ -268,6 +298,16 @@ const routes = [
       },
 
       // Routes Consultations
+      {
+        path: 'consultations/dashboard',
+        name: 'consultations.dashboard',
+        component: ConsultationDashboardPage,
+        meta: {
+          title: 'Dashboard Consultation',
+          roles: ['admin', 'medecin'],
+          permission: 'consultation:read',
+        },
+      },
       {
         path: 'consultations',
         name: 'consultations',
@@ -345,6 +385,16 @@ const routes = [
 
       // route Laboratoire
       {
+        path: 'laboratoire/dashboard',
+        name: 'laboratoire.dashboard',
+        component: LaboratoireDashboardPage,
+        meta: {
+          title: 'Dashboard Laboratoire',
+          roles: ['admin', 'laborantin', 'medecin'],
+          permission: 'examen:read',
+        },
+      },
+      {
         path: 'laboratoire',
         name: 'laboratoire',
         component: LaboratoireListPage,
@@ -421,6 +471,16 @@ const routes = [
       },
 
       // route pharmacie
+      {
+        path: 'pharmacie/dashboard',
+        name: 'pharmacie.dashboard',
+        component: PharmacieDashboardPage,
+        meta: {
+          title: 'Dashboard Pharmacie',
+          roles: ['admin', 'pharmacien', 'medecin'],
+          permission: 'pharmacie:read',
+        },
+      },
       {
         path: 'pharmacie',
         name: 'pharmacie',
@@ -535,7 +595,49 @@ const routes = [
         },
       },
 
+      // route paiements / caisse
+      // route paiements / caisse
+      {
+        path: 'paiements/dashboard',
+        name: 'paiements.dashboard',
+        component: CaisseDashboardPage,
+        meta: {
+          title: 'Dashboard Caisse',
+          roles: ['admin', 'caissier', 'comptable'],
+          permission: 'paiement:read',
+        },
+      },
+      {
+        path: 'paiements',
+        name: 'paiements',
+        component: PaiementsListPage,
+        meta: {
+          title: 'Paiements',
+          roles: ['admin', 'caissier', 'comptable'],
+          permission: 'paiement:read',
+        },
+      },
+      {
+        path: 'paiements/create',
+        name: 'paiements.create',
+        component: PaiementCreatePage,
+        meta: {
+          title: 'Enregistrer paiement',
+          roles: ['admin', 'caissier'],
+          permission: 'paiement:create',
+        },
+      },
       // route facturation
+      {
+        path: 'facturation/dashboard',
+        name: 'facturation.dashboard',
+        component: FacturationDashboardPage,
+        meta: {
+          title: 'Dashboard Facturation',
+          roles: ['admin', 'caissier', 'comptable', 'secretaire'],
+          permission: 'facture:read',
+        },
+      },
       {
         path: 'facturation',
         name: 'facturation',
@@ -573,6 +675,56 @@ const routes = [
         },
       },
 
+      // route clinical dashboard
+
+// route clinical dashboard
+
+// route dme
+      // route clinical dashboard
+      {
+        path: 'clinical-dashboard',
+        name: 'clinical-dashboard',
+        component: ClinicalDashboardPage,
+        meta: {
+          title: 'Dashboard clinique global',
+          roles: ['admin', 'medecin', 'infirmier'],
+          permission: 'clinical_dashboard:read',
+        },
+      },
+
+      {
+        path: 'dme/dashboard',
+        name: 'dme.dashboard',
+        component: DmeDashboardPage,
+        meta: {
+          title: 'Dashboard DME',
+          roles: ['admin', 'medecin', 'infirmier'],
+          permission: 'dme:read',
+        },
+      },
+      {
+        path: 'dme/patients/:patientId',
+        name: 'dme.patient',
+        component: PatientMedicalRecordPage,
+        meta: {
+          title: 'Dossier médical électronique',
+          roles: ['admin', 'medecin', 'infirmier'],
+          permission: 'dme:read',
+        },
+      },
+
+
+// route sorties dashboard
+      {
+        path: 'sorties/dashboard',
+        name: 'sorties.dashboard',
+        component: SortieDashboardPage,
+        meta: {
+          title: 'Dashboard Sorties',
+          roles: ['admin', 'medecin', 'secretaire'],
+          permission: 'sortie:read',
+        },
+      },
       // route sortie
 
       {
@@ -737,6 +889,61 @@ const routes = [
         },
       },
 
+      // route clinical dashboard
+
+// route clinical dashboard
+
+// route dme
+
+// route sorties dashboard
+      {
+        path: 'sorties/dashboard',
+        name: 'sorties.dashboard',
+        component: SortieDashboardPage,
+        meta: {
+          title: 'Dashboard Sorties',
+          roles: ['admin', 'medecin', 'secretaire'],
+          permission: 'sortie:read',
+        },
+      },
+      // route clinical dashboard
+
+// route clinical dashboard
+
+// route dme
+
+// route sorties
+// route hospitalisation
+      {
+        path: 'hospitalisation/dashboard',
+        name: 'hospitalisation.dashboard',
+        component: HospitalisationDashboardPage,
+        meta: {
+          title: 'Dashboard Hospitalisation',
+          roles: ['admin', 'medecin', 'infirmier'],
+          permission: 'hospitalisation:read',
+        },
+      },
+      {
+        path: 'hospitalisation',
+        name: 'hospitalisation',
+        component: HospitalisationsListPage,
+        meta: {
+          title: 'Hospitalisations',
+          roles: ['admin', 'medecin', 'infirmier'],
+          permission: 'hospitalisation:read',
+        },
+      },
+      {
+        path: 'hospitalisation/create',
+        name: 'hospitalisation.create',
+        component: HospitalisationCreatePage,
+        meta: {
+          title: 'Nouvelle hospitalisation',
+          roles: ['admin', 'medecin'],
+          permission: 'hospitalisation:create',
+        },
+      },
       // route administration
       {
         path: 'administration',
@@ -777,6 +984,16 @@ const routes = [
           title: 'Détail notification',
           roles: ['admin', 'medecin', 'secretaire'],
         },
+      },
+
+      {
+        path: "/command-center",
+        name: "command-center",
+        component: CommandCenterPage,
+        meta: {
+            permission: "clinical_dashboard:read",
+            title: "Centre de Commande"
+        }
       },
 
       // route rapport
@@ -862,3 +1079,38 @@ router.beforeEach(async (to) => {
 })
 
 export default router
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

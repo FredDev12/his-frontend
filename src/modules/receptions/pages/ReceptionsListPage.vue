@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
@@ -10,9 +10,11 @@ import ReceptionSearchBar from '@/modules/receptions/components/ReceptionSearchB
 import ReceptionTable from '@/modules/receptions/components/ReceptionTable.vue'
 import ReceptionPaymentDialog from '@/modules/receptions/components/ReceptionPaymentDialog.vue'
 
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useReceptionsStore } from '@/modules/receptions/stores/receptions.store'
 import { useToastStore } from '@/shared/stores/toast.store'
 
+const auth = useAuthStore()
 const store = useReceptionsStore()
 const toast = useToastStore()
 
@@ -125,7 +127,7 @@ async function confirmRemove() {
         </p>
       </div>
 
-      <RouterLink to="/receptions/create">
+      <RouterLink v-if="auth.hasPermission('reception:create')" to="/receptions/create">
         <BaseButton> Nouvelle réception </BaseButton>
       </RouterLink>
     </header>
@@ -156,8 +158,8 @@ async function confirmRemove() {
       <ReceptionTable
         :receptions="store.receptions"
         :loading="store.loading"
-        @pay="askPay"
-        @remove="askRemove"
+        :can-pay="auth.hasPermission('paiement:create')" @pay="askPay"
+        :can-remove="auth.hasPermission('reception:update')" @remove="askRemove"
       />
 
       <div class="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -206,3 +208,4 @@ async function confirmRemove() {
     />
   </div>
 </template>
+

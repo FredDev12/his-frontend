@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { receptionsService } from '@/modules/receptions/services/receptions.service'
 import { useToastStore } from '@/shared/stores/toast.store'
 import {
@@ -191,6 +191,23 @@ export const useReceptionsStore = defineStore('receptions', {
 
   getters: {
     hasReceptions: (state) => state.receptions.length > 0,
+
+    receptionKpis: (state) => {
+      const items = state.receptions || []
+
+      return {
+        total: state.pagination.total || items.length,
+        admissionsToday: items.length,
+        urgences: items.filter((item) => item.urgence).length,
+        paiementsEnAttente: items.filter((item) => !item.paiement_effectue).length,
+        orientesTriage: items.filter((item) =>
+          String(item.service || '').toLowerCase().includes('triage')
+        ).length,
+        nonOrientes: items.filter((item) =>
+          ['non orienté', '', '—'].includes(String(item.service || '').toLowerCase())
+        ).length,
+      }
+    },
   },
 
   actions: {
@@ -460,3 +477,6 @@ export const useReceptionsStore = defineStore('receptions', {
     },
   },
 })
+
+
+

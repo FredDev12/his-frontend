@@ -1,9 +1,11 @@
-<script setup>
+﻿<script setup>
 import { RouterLink } from 'vue-router'
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import ReceptionStatusBadge from '@/modules/receptions/components/ReceptionStatusBadge.vue'
 
 defineProps({
+  canPay: { type: Boolean, default: false },
+  canRemove: { type: Boolean, default: false },
   receptions: {
     type: Array,
     default: () => [],
@@ -111,7 +113,7 @@ function fullName(reception) {
                 </RouterLink>
 
                 <BaseButton
-                  v-if="!reception.paiement_effectue"
+                  v-if="canPay && !reception.paiement_effectue"
                   variant="success"
                   size="sm"
                   @click="$emit('pay', reception)"
@@ -119,7 +121,7 @@ function fullName(reception) {
                   Payer
                 </BaseButton>
 
-                <BaseButton variant="danger" size="sm" @click="$emit('remove', reception)">
+                <BaseButton variant="danger" size="sm" v-if="canRemove" @click="$emit('remove', reception)">
                   Supprimer
                 </BaseButton>
               </div>
@@ -178,7 +180,7 @@ function fullName(reception) {
           </RouterLink>
 
           <BaseButton
-            v-if="!reception.paiement_effectue"
+            v-if="canPay && !reception.paiement_effectue"
             variant="success"
             size="sm"
             @click="$emit('pay', reception)"
@@ -186,7 +188,7 @@ function fullName(reception) {
             Payer
           </BaseButton>
 
-          <BaseButton variant="danger" size="sm" @click="$emit('remove', reception)">
+          <BaseButton variant="danger" size="sm" v-if="canRemove" @click="$emit('remove', reception)">
             Supprimer
           </BaseButton>
         </div>
@@ -194,3 +196,4 @@ function fullName(reception) {
     </div>
   </div>
 </template>
+

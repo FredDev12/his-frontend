@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
@@ -9,9 +9,11 @@ import ConfirmDialog from '@/shared/ui/overlay/ConfirmDialog.vue'
 import TriageSearchBar from '@/modules/triage/components/TriageSearchBar.vue'
 import TriageTable from '@/modules/triage/components/TriageTable.vue'
 
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useTriageStore } from '@/modules/triage/stores/triage.store'
 import { useToastStore } from '@/shared/stores/toast.store'
 
+const auth = useAuthStore()
 const store = useTriageStore()
 const toast = useToastStore()
 
@@ -128,7 +130,7 @@ async function confirmUrgent() {
         </p>
       </div>
 
-      <RouterLink to="/triage/create">
+      <RouterLink v-if="auth.hasPermission('triage:create')" to="/triage/create">
         <BaseButton> Nouveau triage </BaseButton>
       </RouterLink>
     </header>
@@ -159,8 +161,8 @@ async function confirmUrgent() {
       <TriageTable
         :triages="store.triages"
         :loading="store.loading"
-        @remove="askRemove"
-        @status="askUrgent"
+        :can-remove="auth.hasPermission('triage:update')" @remove="askRemove"
+        :can-mark-urgent="auth.hasPermission('triage:update')" @status="askUrgent"
       />
 
       <div class="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -213,3 +215,4 @@ async function confirmUrgent() {
     />
   </div>
 </template>
+

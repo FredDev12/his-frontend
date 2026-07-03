@@ -1,39 +1,34 @@
-<script setup>
+﻿<script setup>
 defineProps({
   title: {
     type: String,
-    default: '',
+    default: ""
   },
   subtitle: {
     type: String,
-    default: '',
-  },
-  padded: {
-    type: Boolean,
-    default: true,
-  },
-})
+    default: ""
+  }
+});
 </script>
 
 <template>
-  <section class="his-card">
+  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
     <header v-if="title || subtitle || $slots.actions" class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
       <div>
-        <h2 v-if="title" class="his-section-title">
+        <h3 v-if="title" class="text-base font-bold text-slate-950">
           {{ title }}
-        </h2>
-
+        </h3>
         <p v-if="subtitle" class="mt-1 text-sm text-slate-500">
           {{ subtitle }}
         </p>
       </div>
 
-      <div v-if="$slots.actions" class="shrink-0">
+      <div v-if="$slots.actions">
         <slot name="actions" />
       </div>
     </header>
 
-    <div :class="padded ? 'p-5' : ''">
+    <div class="p-5">
       <slot />
     </div>
   </section>

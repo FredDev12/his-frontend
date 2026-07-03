@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
@@ -9,9 +9,11 @@ import ConfirmDialog from '@/shared/ui/overlay/ConfirmDialog.vue'
 import LaboratoireSearchBar from '@/modules/laboratoire/components/LaboratoireSearchBar.vue'
 import LaboratoireTable from '@/modules/laboratoire/components/LaboratoireTable.vue'
 
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useLaboratoireStore } from '@/modules/laboratoire/stores/laboratoire.store'
 import { useToastStore } from '@/shared/stores/toast.store'
 
+const auth = useAuthStore()
 const store = useLaboratoireStore()
 const toast = useToastStore()
 
@@ -94,7 +96,7 @@ async function confirmRemove() {
         </p>
       </div>
 
-      <RouterLink to="/laboratoire/create">
+      <RouterLink v-if="auth.hasPermission('examen:create')" to="/laboratoire/create">
         <BaseButton> Nouvelle demande </BaseButton>
       </RouterLink>
     </header>
@@ -122,7 +124,7 @@ async function confirmRemove() {
         </span>
       </template>
 
-      <LaboratoireTable :examens="store.examens" :loading="store.loading" @remove="askRemove" />
+      <LaboratoireTable :examens="store.examens" :loading="store.loading" :can-remove="auth.hasPermission('examen:update_result')" @remove="askRemove" />
 
       <div class="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <p class="text-sm text-slate-500">
@@ -162,3 +164,4 @@ async function confirmRemove() {
     />
   </div>
 </template>
+

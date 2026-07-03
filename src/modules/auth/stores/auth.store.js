@@ -1,165 +1,123 @@
-import { defineStore } from 'pinia'
-import api, {
-  clearCsrfToken,
-  clearFrontendSession,
-  setCsrfToken,
-} from '@/shared/services/api'
-import { useToastStore } from '@/shared/stores/toast.store'
+﻿import { defineStore } from "pinia";
 
-const USER_STORAGE_KEY = 'his_user'
+import { login as loginApi, logout as logoutApi, me as meApi } from "@/modules/auth/services/auth.api";
+import { clearCsrfToken, setCsrfToken } from "@/shared/services/api";
 
-function normalizeUser(rawUser) {
-  if (!rawUser) return null
-
-  const roleCode =
-    rawUser.roleCode ||
-    rawUser.role?.code ||
-    rawUser.role?.name ||
-    rawUser.role ||
-    null
-
-  return {
-    ...rawUser,
-    firstName: rawUser.firstName || rawUser.prenom || rawUser.prénom || '',
-    lastName: rawUser.lastName || rawUser.nom || '',
-    roleCode,
-    permissions: Array.isArray(rawUser.permissions) ? rawUser.permissions : [],
-  }
+function normalizeUser(payload) {
+  return payload?.data?.user ?? payload?.user ?? null;
 }
 
-export const useAuthStore = defineStore('auth', {
+function normalizeCsrfToken(payload) {
+  return payload?.data?.csrfToken ?? payload?.csrfToken ?? null;
+}
+
+export const useAuthStore = defineStore("auth", {
   state: () => ({
-    initialized: false,
-    loading: false,
     user: null,
     csrfToken: null,
+    loading: false,
+    initialized: false,
+    error: null
   }),
 
   getters: {
     isAuthenticated: (state) => Boolean(state.user),
 
-    role: (state) => {
-      const roleCode = state.user?.roleCode || null
-      return roleCode ? String(roleCode).toLowerCase() : null
+    permissions: (state) => {
+      return Array.isArray(state.user?.permissions) ? state.user.permissions : [];
     },
 
-    permissions: (state) => state.user?.permissions || [],
+    roleCode: (state) => state.user?.role?.code ?? null,
 
     fullName: (state) => {
-      if (!state.user) return 'Utilisateur'
+      const firstName = state.user?.firstName ?? "";
+      const lastName = state.user?.lastName ?? "";
 
-      return [state.user.firstName, state.user.lastName]
-        .filter(Boolean)
-        .join(' ') || state.user.email || 'Utilisateur'
-    },
-
-    hasPermission: (state) => {
-      return (permission) => {
-        if (!permission) return true
-        return (state.user?.permissions || []).includes(permission)
-      }
-    },
+      return `${firstName} ${lastName}`.trim() || "Utilisateur";
+    }
   },
 
   actions: {
-    async initialize() {
-      const storedUser = localStorage.getItem(USER_STORAGE_KEY)
-
-      if (storedUser) {
-        try {
-          this.user = normalizeUser(JSON.parse(storedUser))
-        } catch {
-          this.user = null
-        }
-      }
-
-      try {
-        await this.fetchProfile()
-      } catch {
-        this.clearSession()
-      } finally {
-        this.initialized = true
-      }
+    hasPermission(permission) {
+      if (!permission) return true;
+      return this.permissions.includes(permission);
     },
 
-    async login(credentials) {
-      const toast = useToastStore()
-
-      this.loading = true
-
-      try {
-        const response = await api.post('/auth/login', {
-          email: credentials.email,
-          password: credentials.password,
-        })
-
-        const payload = response.data?.data || {}
-        const user = normalizeUser(payload.user)
-        const csrfToken = payload.csrfToken
-
-        if (!user) {
-          throw new Error('Utilisateur absent dans la réponse de connexion.')
-        }
-
-        this.user = user
-        this.csrfToken = csrfToken || null
-
-        if (csrfToken) {
-          setCsrfToken(csrfToken)
-        }
-
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
-        localStorage.removeItem('his_access_token')
-
-        toast.success('Connexion réussie.')
-
-        return true
-      } catch (error) {
-        const message =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Identifiants invalides ou serveur indisponible.'
-
-        toast.error(message)
-
-        throw error
-      } finally {
-        this.loading = false
-      }
+    hasAnyPermission(permissions = []) {
+      if (!permissions.length) return true;
+      return permissions.some((permission) => this.hasPermission(permission));
     },
 
-    async fetchProfile() {
-      const response = await api.get('/auth/me')
+    setSession(payload) {
+      const user = normalizeUser(payload);
+      const token = normalizeCsrfToken(payload);
 
-      const payload = response.data?.data || {}
-      const user = normalizeUser(payload.user)
+      this.user = user;
 
-      if (!user) {
-        throw new Error('Profil utilisateur absent.')
+      if (token) {
+        this.csrfToken = token;
+        setCsrfToken(token);
       }
 
-      this.user = user
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
-
-      return user
-    },
-
-    async logout() {
-      try {
-        await api.post('/auth/logout')
-      } catch {
-        // Même si l’API échoue, la session locale doit être nettoyée.
-      } finally {
-        this.clearSession()
-      }
+      this.error = null;
+      this.initialized = true;
     },
 
     clearSession() {
-      this.user = null
-      this.csrfToken = null
-
-      clearCsrfToken()
-      clearFrontendSession()
+      this.user = null;
+      this.csrfToken = null;
+      this.error = null;
+      this.initialized = true;
+      clearCsrfToken();
     },
-  },
-})
+
+    async login(credentials) {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const response = await loginApi(credentials);
+        this.setSession(response);
+
+        return response;
+      } catch (error) {
+        this.clearSession();
+        this.error = error;
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async loadCurrentUser() {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const response = await meApi();
+        this.setSession(response);
+
+        return response;
+      } catch (error) {
+        this.clearSession();
+        this.error = error;
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async logout() {
+      this.loading = true;
+
+      try {
+        await logoutApi();
+      } finally {
+        this.clearSession();
+        this.loading = false;
+      }
+    }
+  }
+});
+
+export default useAuthStore;

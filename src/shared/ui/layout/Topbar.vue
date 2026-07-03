@@ -1,10 +1,11 @@
-<script setup>
+﻿<script setup>
 defineOptions({ name: 'AppTopbar' })
 
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import NotificationBell from '@/modules/notifications/components/NotificationBell.vue'
+import GlobalSearchBar from '@/modules/search/components/GlobalSearchBar.vue'
 
 const emit = defineEmits(['open-sidebar'])
 
@@ -35,12 +36,8 @@ async function logout() {
         </p>
       </div>
 
-      <div class="hidden w-full max-w-sm md:block">
-        <input
-          type="search"
-          placeholder="Rechercher patient, fiche, facture..."
-          class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm his-focus"
-        />
+      <div class="hidden w-full max-w-xl md:block">
+        <GlobalSearchBar />
       </div>
       <div class="flex items-center gap-3">
         <NotificationBell />
@@ -52,3 +49,5 @@ async function logout() {
     </div>
   </header>
 </template>
+
+

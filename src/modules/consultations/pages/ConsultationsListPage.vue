@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
@@ -9,9 +9,11 @@ import ConfirmDialog from '@/shared/ui/overlay/ConfirmDialog.vue'
 import ConsultationSearchBar from '@/modules/consultations/components/ConsultationSearchBar.vue'
 import ConsultationTable from '@/modules/consultations/components/ConsultationTable.vue'
 
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useConsultationsStore } from '@/modules/consultations/stores/consultations.store'
 import { useToastStore } from '@/shared/stores/toast.store'
 
+const auth = useAuthStore()
 const store = useConsultationsStore()
 const toast = useToastStore()
 
@@ -95,7 +97,7 @@ async function confirmRemove() {
         </p>
       </div>
 
-      <RouterLink to="/consultations/create">
+      <RouterLink v-if="auth.hasPermission('consultation:create')" to="/consultations/create">
         <BaseButton> Nouvelle consultation </BaseButton>
       </RouterLink>
     </header>
@@ -126,7 +128,7 @@ async function confirmRemove() {
       <ConsultationTable
         :consultations="store.consultations"
         :loading="store.loading"
-        @remove="askRemove"
+        :can-remove="auth.hasPermission('consultation:update')" @remove="askRemove"
       />
 
       <div class="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -167,3 +169,4 @@ async function confirmRemove() {
     />
   </div>
 </template>
+

@@ -1,4 +1,4 @@
-import { io } from 'socket.io-client'
+﻿import { io } from 'socket.io-client'
 
 const STORAGE_KEY = 'his_notifications'
 
@@ -309,6 +309,22 @@ export const notificationsService = {
       enabled: true,
       connected: socket.connected,
     }
+  },  subscribeRealtime(eventName, callback) {
+    if (!socket || !eventName || typeof callback !== 'function') {
+      return false
+    }
+
+    socket.on(eventName, callback)
+    return true
+  },
+
+  unsubscribeRealtime(eventName, callback) {
+    if (!socket || !eventName || typeof callback !== 'function') {
+      return false
+    }
+
+    socket.off(eventName, callback)
+    return true
   },
 
   disconnectRealtime() {
@@ -318,3 +334,5 @@ export const notificationsService = {
     }
   },
 }
+
+

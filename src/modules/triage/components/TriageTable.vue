@@ -1,9 +1,11 @@
-<script setup>
+﻿<script setup>
 import { RouterLink } from 'vue-router'
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import TriagePriorityBadge from '@/modules/triage/components/TriagePriorityBadge.vue'
 
 defineProps({
+  canMarkUrgent: { type: Boolean, default: false },
+  canRemove: { type: Boolean, default: false },
   triages: {
     type: Array,
     default: () => [],
@@ -106,15 +108,14 @@ function fullName(triage) {
                 </RouterLink>
 
                 <BaseButton
-                  v-if="triage.priorite !== 'URGENT'"
                   variant="emergency"
                   size="sm"
-                  @click="$emit('status', triage)"
+                  v-if="canMarkUrgent" @click="$emit('status', triage)"
                 >
                   Marquer urgent
                 </BaseButton>
 
-                <BaseButton variant="danger" size="sm" @click="$emit('remove', triage)">
+                <BaseButton variant="danger" size="sm" v-if="canRemove" @click="$emit('remove', triage)">
                   Supprimer
                 </BaseButton>
               </div>
@@ -173,7 +174,7 @@ function fullName(triage) {
             <BaseButton variant="secondary" size="sm">Modifier</BaseButton>
           </RouterLink>
 
-          <BaseButton variant="danger" size="sm" @click="$emit('remove', triage)">
+          <BaseButton variant="danger" size="sm" v-if="canRemove" @click="$emit('remove', triage)">
             Supprimer
           </BaseButton>
         </div>
@@ -181,3 +182,6 @@ function fullName(triage) {
     </div>
   </div>
 </template>
+
+
+

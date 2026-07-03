@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { consultationsService } from '@/modules/consultations/services/consultations.service'
 import { useToastStore } from '@/shared/stores/toast.store'
 import {
@@ -249,6 +249,48 @@ export const useConsultationsStore = defineStore('consultations', {
     },
   }),
 
+  getters: {
+    consultationKpis: (state) => {
+      const items = state.consultations || []
+
+      const hasText = (value) => String(value || '').trim().length > 0
+
+      const includesAny = (value, keywords = []) => {
+        const text = String(value || '').toLowerCase()
+        return keywords.some((keyword) => text.includes(keyword))
+      }
+
+      return {
+        total: state.pagination.total || items.length,
+        consultationsToday: items.length,
+        patientsExamines: items.length,
+        diagnosticsPoses: items.filter((item) => hasText(item.diagnostique)).length,
+        examensDemandes: items.filter((item) =>
+          includesAny(item.plan_prise_en_charge, ['examen', 'laboratoire', 'imagerie'])
+        ).length,
+        ordonnances: items.filter((item) =>
+          includesAny(item.plan_prise_en_charge, ['prescription', 'ordonnance', 'traitement'])
+        ).length,
+        hospitalisations: items.filter((item) =>
+          includesAny(item.plan_prise_en_charge, ['hospital', 'admission'])
+        ).length,
+        sorties: items.filter((item) =>
+          includesAny(item.plan_prise_en_charge, ['sortie', 'domicile'])
+        ).length,
+        urgences: items.filter((item) =>
+          includesAny(
+            [
+              item.diagnostique,
+              item.plaintes,
+              item.plan_prise_en_charge,
+            ].join(" "),
+            ["urgent", "urgence", "grave", "critique"]
+          )
+        ).length,
+      }
+    },
+  },
+
   actions: {
     async fetchConsultations(params = {}) {
       this.loading = true
@@ -497,3 +539,5 @@ export const useConsultationsStore = defineStore('consultations', {
     },
   },
 })
+
+

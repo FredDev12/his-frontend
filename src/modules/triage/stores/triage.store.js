@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { triageService } from '@/modules/triage/services/triage.service'
 import { useToastStore } from '@/shared/stores/toast.store'
 import {
@@ -160,6 +160,38 @@ export const useTriageStore = defineStore('triage', {
       type_passage: '',
     },
   }),
+
+  getters: {
+    triageKpis: (state) => {
+      const items = state.triages || []
+
+      const isUrgent = (item) =>
+        ['URGENT', 'URGENCE', 'VITALE'].includes(String(item.priorite || '').toUpperCase())
+
+      const isHighPriority = (item) =>
+        ['ELEVE', 'ÉLEVÉ', 'HIGH', 'URGENT', 'URGENCE', 'VITALE'].includes(
+          String(item.priorite || '').toUpperCase()
+        )
+
+      const isOriented = (item) => {
+        const service = String(item.service_entree || '').toLowerCase()
+        return service && service !== 'non orienté' && service !== '—'
+      }
+
+      const isWaiting = (item) =>
+        ['active', 'en_attente', 'attente'].includes(String(item.statut || '').toLowerCase())
+
+      return {
+        total: state.pagination.total || items.length,
+        triagesToday: items.length,
+        urgences: items.filter(isUrgent).length,
+        prioriteElevee: items.filter(isHighPriority).length,
+        patientsOrientes: items.filter(isOriented).length,
+        patientsNonOrientes: items.filter((item) => !isOriented(item)).length,
+        enAttente: items.filter(isWaiting).length,
+      }
+    },
+  },
 
   actions: {
     async fetchTriages(params = {}) {
@@ -433,3 +465,5 @@ export const useTriageStore = defineStore('triage', {
     },
   },
 })
+
+

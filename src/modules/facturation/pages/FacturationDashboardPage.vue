@@ -1,0 +1,151 @@
+﻿<script setup>
+import { computed, onMounted } from "vue";
+import { RouterLink } from "vue-router";
+
+import BaseBadge from "@/shared/ui/base/BaseBadge.vue";
+import BaseButton from "@/shared/ui/base/BaseButton.vue";
+import BaseCard from "@/shared/ui/base/BaseCard.vue";
+import DataTable from "@/shared/ui/data/DataTable.vue";
+
+import { useAuthStore } from "@/modules/auth/stores/auth.store";
+import { useFacturationStore } from "@/modules/facturation/stores/facturation.store";
+
+const auth = useAuthStore();
+const store = useFacturationStore();
+
+const columns = [
+  { key: "numero", label: "Facture" },
+  { key: "patient", label: "Patient" },
+  { key: "montant", label: "Montant" },
+  { key: "statut", label: "Statut" }
+];
+
+const recentRows = computed(() => {
+  return store.factures.slice(0, 6).map((item) => ({
+    id: item.id,
+    numero: item.numero || "Facture",
+    patient: [item.nom, item.postnom, item.prenom].filter(Boolean).join(" ") || "Patient",
+    montant: formatMoney(item.total, item.devise),
+    statut: item.statut || "draft"
+  }));
+});
+
+const unpaidRows = computed(() => {
+  return store.factures
+    .filter((item) => ["draft", "issued"].includes(String(item.statut || "").toLowerCase()))
+    .slice(0, 6)
+    .map((item) => ({
+      id: item.id,
+      numero: item.numero || "Facture",
+      patient: [item.nom, item.postnom, item.prenom].filter(Boolean).join(" ") || "Patient",
+      montant: formatMoney(item.total, item.devise),
+      statut: item.statut || "issued"
+    }));
+});
+
+const stats = computed(() => store.financialKpis);
+
+onMounted(() => {
+  store.fetchFactures({ page: 1, limit: 10 });
+});
+
+function formatMoney(value, devise = "CDF") {
+  return `${Number(value || 0).toLocaleString("fr-FR")} ${devise}`;
+}
+</script>
+
+<template>
+  <div class="space-y-6">
+    <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+      <div>
+        <BaseBadge variant="warning">Facturation / Caisse</BaseBadge>
+
+        <h1 class="mt-3 his-page-title">Dashboard Facturation / Caisse</h1>
+
+        <p class="his-page-subtitle">
+          Vue financière : factures, montants dus, paiements simulés, annulations et suivi caisse.
+        </p>
+      </div>
+
+      <RouterLink v-if="auth.hasPermission('facture:create')" to="/facturation/create">
+        <BaseButton>Nouvelle facture</BaseButton>
+      </RouterLink>
+    </header>
+
+    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <BaseCard title="Factures">
+        <p class="text-3xl font-bold text-slate-950">{{ stats.total }}</p>
+        <p class="mt-1 text-sm text-slate-500">Factures chargées</p>
+      </BaseCard>
+
+      <BaseCard title="Montant total">
+        <p class="text-3xl font-bold text-blue-700">{{ formatMoney(stats.totalAmount, stats.devise) }}</p>
+        <p class="mt-1 text-sm text-slate-500">Total facturé</p>
+      </BaseCard>
+
+      <BaseCard title="Payé">
+        <p class="text-3xl font-bold text-emerald-700">{{ formatMoney(stats.paidAmount, stats.devise) }}</p>
+        <p class="mt-1 text-sm text-slate-500">Recettes encaissées</p>
+      </BaseCard>
+
+      <BaseCard title="Impayé">
+        <p class="text-3xl font-bold text-rose-700">{{ formatMoney(stats.unpaidAmount, stats.devise) }}</p>
+        <p class="mt-1 text-sm text-slate-500">Montant à recouvrer</p>
+      </BaseCard>
+
+      <BaseCard title="Brouillons">
+        <p class="text-3xl font-bold text-slate-700">{{ stats.brouillons }}</p>
+        <p class="mt-1 text-sm text-slate-500">À émettre</p>
+      </BaseCard>
+
+      <BaseCard title="Émises">
+        <p class="text-3xl font-bold text-amber-600">{{ stats.emises }}</p>
+        <p class="mt-1 text-sm text-slate-500">En attente paiement</p>
+      </BaseCard>
+
+      <BaseCard title="Payées">
+        <p class="text-3xl font-bold text-emerald-700">{{ stats.payees }}</p>
+        <p class="mt-1 text-sm text-slate-500">Factures soldées</p>
+      </BaseCard>
+
+      <BaseCard title="Annulées">
+        <p class="text-3xl font-bold text-slate-500">{{ stats.annulees }}</p>
+        <p class="mt-1 text-sm text-slate-500">Factures annulées</p>
+      </BaseCard>
+    </section>
+
+    <section class="grid gap-6 xl:grid-cols-2">
+      <BaseCard title="Impayés / à recouvrer" subtitle="Factures brouillon ou émises non payées.">
+        <DataTable
+          :columns="columns"
+          :rows="unpaidRows"
+          empty-text="Aucune facture impayée chargée."
+        />
+      </BaseCard>
+
+      <BaseCard title="Activité financière récente" subtitle="Dernières factures chargées.">
+        <DataTable
+          :columns="columns"
+          :rows="recentRows"
+          empty-text="Aucune facture chargée."
+        />
+
+        <div class="mt-5 flex justify-end">
+          <RouterLink to="/facturation">
+            <BaseButton variant="secondary">Voir toutes les factures</BaseButton>
+          </RouterLink>
+        </div>
+      </BaseCard>
+    </section>
+
+    <BaseCard title="Règles métier Facturation / Caisse" subtitle="Sécurité financière et audit.">
+      <ul class="space-y-2 text-sm text-slate-600">
+        <li>• Toute facture doit être liée à un patient et un épisode.</li>
+        <li>• Le paiement réel doit être traité par un module Caisse dédié.</li>
+        <li>• Toute annulation de facture doit rester auditée.</li>
+        <li>• Les montants affichés ici proviennent du store facturation frontend.</li>
+      </ul>
+    </BaseCard>
+  </div>
+</template>
+

@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
@@ -9,9 +9,11 @@ import ConfirmDialog from '@/shared/ui/overlay/ConfirmDialog.vue'
 import PharmacieSearchBar from '@/modules/pharmacie/components/PharmacieSearchBar.vue'
 import PharmacieTable from '@/modules/pharmacie/components/PharmacieTable.vue'
 
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { usePharmacieStore } from '@/modules/pharmacie/stores/pharmacie.store'
 import { useToastStore } from '@/shared/stores/toast.store'
 
+const auth = useAuthStore()
 const store = usePharmacieStore()
 const toast = useToastStore()
 
@@ -119,7 +121,7 @@ async function confirmRemove() {
         </p>
       </div>
 
-      <RouterLink to="/pharmacie/create">
+      <RouterLink v-if="auth.hasPermission('prescription:create')" to="/pharmacie/create">
         <BaseButton> Nouvelle prescription </BaseButton>
       </RouterLink>
     </header>
@@ -150,8 +152,8 @@ async function confirmRemove() {
       <PharmacieTable
         :prescriptions="store.prescriptions"
         :loading="store.loading"
-        @deliver="askDeliver"
-        @remove="askRemove"
+        :can-deliver="auth.hasPermission('pharmacie:serve_prescription')" @deliver="askDeliver"
+        :can-remove="auth.hasPermission('prescription:validate')" @remove="askRemove"
       />
 
       <div class="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -204,3 +206,4 @@ async function confirmRemove() {
     />
   </div>
 </template>
+

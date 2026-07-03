@@ -35,10 +35,12 @@ async function submit(payload) {
     router.push('/receptions')
   } catch (error) {
     console.error('[Réceptions] Erreur création:', error)
+    console.error('[Réceptions] Réponse backend:', error.response?.data)
 
     serverError.value =
       error.response?.data?.message ||
       error.response?.data?.error ||
+      JSON.stringify(error.response?.data?.details || error.response?.data?.errors || '') ||
       'Création de la réception impossible.'
 
     toast.error(serverError.value)

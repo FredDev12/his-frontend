@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { pharmacieService } from '@/modules/pharmacie/services/pharmacie.service'
 import { useToastStore } from '@/shared/stores/toast.store'
 import {
@@ -215,6 +215,37 @@ export const usePharmacieStore = defineStore('pharmacie', {
       statut: '',
     },
   }),
+
+  getters: {
+    pharmacieKpis: (state) => {
+      const items = state.prescriptions || []
+
+      const statusOf = (item) => String(item.statut || '').toLowerCase()
+
+      const isPending = (item) =>
+        ['pending', 'en_attente', 'attente'].includes(statusOf(item))
+
+      const isDelivered = (item) =>
+        ['delivered', 'delivre', 'délivré', 'served'].includes(statusOf(item))
+
+      const isPartial = (item) => statusOf(item) === 'partial'
+
+      const totalMedicaments = items.reduce((sum, item) => {
+        return sum + (Array.isArray(item.medicaments) ? item.medicaments.length : 0)
+      }, 0)
+
+      return {
+        total: state.pagination.total || items.length,
+        prescriptionsToday: items.length,
+        aServir: items.filter(isPending).length,
+        delivrees: items.filter(isDelivered).length,
+        partielles: items.filter(isPartial).length,
+        medicaments: totalMedicaments,
+        patients: new Set(items.map((item) => item.numero_patient).filter(Boolean)).size,
+        alertesStock: 0,
+      }
+    },
+  },
 
   actions: {
     async fetchPrescriptions(params = {}) {
@@ -518,3 +549,4 @@ export const usePharmacieStore = defineStore('pharmacie', {
     },
   },
 })
+

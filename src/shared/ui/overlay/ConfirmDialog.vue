@@ -1,65 +1,111 @@
-<script setup>
-import BaseButton from '@/shared/ui/base/BaseButton.vue'
+﻿<script setup>
+import { computed, ref, watch } from "vue";
 
-defineProps({
+import BaseButton from "@/shared/ui/base/BaseButton.vue";
+
+const props = defineProps({
   open: {
     type: Boolean,
-    default: false,
+    default: false
   },
   title: {
     type: String,
-    default: 'Confirmer l’action',
+    default: "Confirmer l’action"
   },
   message: {
     type: String,
-    default: '',
+    default: ""
   },
-  confirmLabel: {
+  patientName: {
     type: String,
-    default: 'Confirmer',
+    default: ""
   },
-  cancelLabel: {
+  patientId: {
+    type: [String, Number],
+    default: ""
+  },
+  consequence: {
     type: String,
-    default: 'Annuler',
+    default: ""
+  },
+  confirmText: {
+    type: String,
+    default: "Confirmer"
+  },
+  requireText: {
+    type: String,
+    default: ""
   },
   variant: {
     type: String,
-    default: 'danger',
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-})
+    default: "danger"
+  }
+});
 
-defineEmits(['confirm', 'cancel'])
+const emit = defineEmits(["close", "confirm"]);
+
+const typedText = ref("");
+
+const canConfirm = computed(() => {
+  if (!props.requireText) return true;
+  return typedText.value === props.requireText;
+});
+
+watch(
+  () => props.open,
+  () => {
+    typedText.value = "";
+  }
+);
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4"
-    >
-      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-        <h2 class="text-lg font-semibold text-slate-950">
+  <div
+    v-if="open"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div class="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+      <div class="border-b border-slate-200 px-6 py-4">
+        <h2 class="text-lg font-bold text-slate-950">
           {{ title }}
         </h2>
-
-        <p class="mt-3 text-sm leading-6 text-slate-600">
+        <p v-if="message" class="mt-1 text-sm text-slate-600">
           {{ message }}
         </p>
+      </div>
 
-        <div class="mt-6 flex justify-end gap-3">
-          <BaseButton variant="secondary" :disabled="loading" @click="$emit('cancel')">
-            {{ cancelLabel }}
-          </BaseButton>
-
-          <BaseButton :variant="variant" :loading="loading" @click="$emit('confirm')">
-            {{ confirmLabel }}
-          </BaseButton>
+      <div class="space-y-4 px-6 py-5">
+        <div v-if="patientName || patientId" class="rounded-xl bg-slate-50 p-4 text-sm">
+          <p class="font-semibold text-slate-900">{{ patientName }}</p>
+          <p class="text-slate-500">ID patient : {{ patientId }}</p>
         </div>
+
+        <p v-if="consequence" class="rounded-xl bg-red-50 p-4 text-sm font-medium text-red-700">
+          {{ consequence }}
+        </p>
+
+        <label v-if="requireText" class="block">
+          <span class="mb-1 block text-sm font-semibold text-slate-700">
+            Saisir {{ requireText }} pour confirmer
+          </span>
+          <input
+            v-model="typedText"
+            class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+          />
+        </label>
+      </div>
+
+      <div class="flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
+        <BaseButton variant="secondary" @click="emit('close')">
+          Annuler
+        </BaseButton>
+
+        <BaseButton :variant="variant" :disabled="!canConfirm" @click="emit('confirm')">
+          {{ confirmText }}
+        </BaseButton>
       </div>
     </div>
-  </Teleport>
+  </div>
 </template>
