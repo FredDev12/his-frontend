@@ -107,6 +107,24 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
+    async initialize() {
+      if (this.initialized) {
+        return this.user
+      }
+
+      this.initialized = true
+
+      try {
+        if (typeof this.fetchMe === "function") {
+          await this.fetchMe()
+        }
+
+        return this.user
+      } catch {
+        return this.user
+      }
+    },
+
     async logout() {
       this.loading = true;
 
@@ -121,3 +139,4 @@ export const useAuthStore = defineStore("auth", {
 });
 
 export default useAuthStore;
+

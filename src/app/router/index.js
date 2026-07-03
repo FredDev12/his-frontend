@@ -125,7 +125,18 @@ import FactureEditPage from '@/modules/facturation/pages/FactureEditPage.vue'
 
 
   // route centre de commande
+import SortieDashboardPage from "@/modules/sorties/pages/SortieDashboardPage.vue"
+import PatientMedicalRecordPage from "@/modules/dme/pages/PatientMedicalRecordPage.vue"
+import DmeDashboardPage from "@/modules/dme/pages/DmeDashboardPage.vue"
+import ClinicalDashboardPage from "@/modules/clinical-dashboard/pages/ClinicalDashboardPage.vue"
 import CommandCenterPage from "@/modules/clinical-dashboard/pages/CommandCenterPage.vue"
+
+import AdministrationPage from "@//modules/administration/pages/AdministrationPage.vue"
+import HospitalisationCreatePage from "@//modules/hospitalisation/pages/HospitalisationCreatePage.vue"
+import HospitalisationDashboardPage from "@//modules/hospitalisation/pages/HospitalisationDashboardPage.vue"
+import HospitalisationsListPage from "@//modules/hospitalisation/pages/HospitalisationsListPage.vue"
+import SortieCreatePage from "@//modules/sorties/pages/SortieCreatePage.vue"
+import SortiesListPage from "@//modules/sorties/pages/SortiesListPage.vue"
 
 const routes = [
   {
@@ -1079,6 +1090,11 @@ router.beforeEach(async (to) => {
 })
 
 export default router
+
+
+
+
+
 
 
 
