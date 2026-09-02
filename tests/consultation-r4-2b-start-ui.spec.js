@@ -13,7 +13,7 @@ function source(path) {
   return readFileSync(
     resolve(process.cwd(), path),
     'utf8',
-  )
+  ).replace(/\r\n?/g, '\n')
 }
 
 describe(
