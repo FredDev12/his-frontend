@@ -92,3 +92,5 @@ archive/
 backups/
 *.bak
 *.bak.*
+
+.firebase/
