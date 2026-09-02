@@ -84,3 +84,11 @@ coverage/
 *.key
 *.crt
 node_modules
+.eslintcache
+stats.html
+log.txt
+.patch-backups/
+archive/
+backups/
+*.bak
+*.bak.*
