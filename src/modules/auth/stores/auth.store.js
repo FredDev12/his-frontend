@@ -1,4 +1,4 @@
-﻿import { defineStore } from "pinia";
+import { defineStore } from "pinia";
 
 import { login as loginApi, logout as logoutApi, me as meApi } from "@/modules/auth/services/auth.api";
 import { clearCsrfToken, setCsrfToken } from "@/shared/services/api";
@@ -24,7 +24,13 @@ export const useAuthStore = defineStore("auth", {
     isAuthenticated: (state) => Boolean(state.user),
 
     permissions: (state) => {
-      return Array.isArray(state.user?.permissions) ? state.user.permissions : [];
+      if (!Array.isArray(state.user?.permissions)) {
+        return [];
+      }
+
+      return state.user.permissions
+        .map((permission) => String(permission).trim().toLowerCase())
+        .filter(Boolean);
     },
 
     roleCode: (state) => state.user?.role?.code ?? state.user?.roleCode ?? state.user?.role ?? null,
@@ -41,8 +47,15 @@ export const useAuthStore = defineStore("auth", {
 
   actions: {
     hasPermission(permission) {
-      if (!permission) return true;
-      return this.permissions.includes(permission);
+      if (!permission) {
+        return true;
+      }
+
+      const normalizedPermission = String(permission)
+        .trim()
+        .toLowerCase();
+
+      return this.permissions.includes(normalizedPermission);
     },
 
     hasAnyPermission(permissions = []) {
@@ -141,6 +154,7 @@ export const useAuthStore = defineStore("auth", {
 });
 
 export default useAuthStore;
+
 
 
 

@@ -1,10 +1,11 @@
-﻿<script setup>
+<script setup>
 import { RouterLink } from 'vue-router'
+
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import ConsultationStatusBadge from '@/modules/consultations/components/ConsultationStatusBadge.vue'
+import { patientDisplayName } from '@/shared/utils/patient'
 
 defineProps({
-  canRemove: { type: Boolean, default: false },
   consultations: {
     type: Array,
     default: () => [],
@@ -15,11 +16,14 @@ defineProps({
   },
 })
 
-defineEmits(['remove'])
-
 function fullName(consultation) {
-  return (
-    [consultation.nom, consultation.postnom, consultation.prenom].filter(Boolean).join(' ') || '—'
+  return patientDisplayName(
+    {
+      nom: consultation.nom,
+      postnom: consultation.postnom,
+      prenom: consultation.prenom,
+    },
+    consultation.numero_patient,
   )
 }
 </script>
@@ -30,35 +34,23 @@ function fullName(consultation) {
       <table class="min-w-full divide-y divide-slate-200">
         <thead class="bg-slate-50">
           <tr>
-            <th
-              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Patient
             </th>
-            <th
-              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Plaintes
             </th>
-            <th
-              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Diagnostic
             </th>
-            <th
-              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Service
             </th>
-            <th
-              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Statut
             </th>
-            <th
-              class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
-              Actions
+            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Action
             </th>
           </tr>
         </thead>
@@ -87,7 +79,8 @@ function fullName(consultation) {
                 {{ fullName(consultation) }}
               </p>
               <p class="mt-1 text-xs text-slate-500">
-                Patient N° {{ consultation.numero_patient }} · Fiche {{ consultation.numero_fiche }}
+                Patient {{ consultation.numero_patient }} ·
+                Fiche {{ consultation.numero_fiche }}
               </p>
             </td>
 
@@ -107,20 +100,12 @@ function fullName(consultation) {
               <ConsultationStatusBadge :statut="consultation.statut" />
             </td>
 
-            <td class="px-4 py-4">
-              <div class="flex justify-end gap-2">
-                <RouterLink :to="`/consultations/${consultation.id}`">
-                  <BaseButton variant="secondary" size="sm"> Voir </BaseButton>
-                </RouterLink>
-
-                <RouterLink :to="`/consultations/${consultation.id}/edit`">
-                  <BaseButton variant="secondary" size="sm"> Modifier </BaseButton>
-                </RouterLink>
-
-                <BaseButton variant="danger" size="sm" v-if="canRemove" @click="$emit('remove', consultation)">
-                  Supprimer
+            <td class="px-4 py-4 text-right">
+              <RouterLink :to="`/consultations/${consultation.id}`">
+                <BaseButton variant="secondary" size="sm">
+                  Consulter
                 </BaseButton>
-              </div>
+              </RouterLink>
             </td>
           </tr>
         </tbody>
@@ -128,7 +113,10 @@ function fullName(consultation) {
     </div>
 
     <div class="space-y-3 p-3 md:hidden">
-      <div v-if="loading" class="rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-500">
+      <div
+        v-if="loading"
+        class="rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-500"
+      >
         Chargement des consultations...
       </div>
 
@@ -151,7 +139,9 @@ function fullName(consultation) {
               {{ fullName(consultation) }}
             </h3>
 
-            <p class="mt-1 text-sm text-slate-500">Fiche {{ consultation.numero_fiche }}</p>
+            <p class="mt-1 text-sm text-slate-500">
+              Fiche {{ consultation.numero_fiche }}
+            </p>
           </div>
 
           <ConsultationStatusBadge :statut="consultation.statut" />
@@ -164,21 +154,15 @@ function fullName(consultation) {
           </span>
         </p>
 
-        <div class="mt-4 flex flex-wrap gap-2">
-          <RouterLink :to="`/consultations/${consultation.id}`">
-            <BaseButton variant="secondary" size="sm">Voir</BaseButton>
-          </RouterLink>
-
-          <RouterLink :to="`/consultations/${consultation.id}/edit`">
-            <BaseButton variant="secondary" size="sm">Modifier</BaseButton>
-          </RouterLink>
-
-          <BaseButton variant="danger" size="sm" v-if="canRemove" @click="$emit('remove', consultation)">
-            Supprimer
+        <RouterLink
+          class="mt-4 block"
+          :to="`/consultations/${consultation.id}`"
+        >
+          <BaseButton variant="secondary" class="w-full">
+            Consulter
           </BaseButton>
-        </div>
+        </RouterLink>
       </article>
     </div>
   </div>
 </template>
-

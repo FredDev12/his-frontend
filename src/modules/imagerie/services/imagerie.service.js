@@ -1,49 +1,52 @@
 import api from '@/shared/services/api'
 
-function unwrapResponse(response) {
-  return response?.data ?? response
-}
+export const IMAGING_TYPES = [
+  'RADIOLOGIE',
+  'ECHOGRAPHIE',
+  'SCANNER',
+  'IRM',
+]
 
 function cleanParams(params = {}) {
   return Object.fromEntries(
     Object.entries(params).filter(
-      ([, value]) => value !== undefined && value !== null && value !== '',
+      ([, value]) =>
+        value !== undefined &&
+        value !== null &&
+        value !== '',
     ),
   )
 }
 
 export const imagerieService = {
   async list(params = {}) {
-    const limit = params.limit || params.limite || 10
-
-    const response = await api.get('/imagerie', {
+    return api.get('/examens', {
       params: cleanParams({
+        type: params.type,
+        q: params.q,
+        status: params.status || params.statut,
         page: params.page || 1,
-        limit,
-        limite: limit,
+        limit:
+          params.limit ||
+          params.limite ||
+          10,
       }),
     })
-
-    return unwrapResponse(response)
   },
 
   async getById(id) {
-    const response = await api.get(`/imagerie/${id}`)
-    return unwrapResponse(response)
+    return api.get(`/examens/${id}`)
   },
 
-  async create(payload) {
-    const response = await api.post('/imagerie', payload)
-    return unwrapResponse(response)
-  },
-
-  async update(id, payload) {
-    const response = await api.put(`/imagerie/${id}`, payload)
-    return unwrapResponse(response)
-  },
-
-  async remove(id) {
-    const response = await api.delete(`/imagerie/${id}`)
-    return unwrapResponse(response)
+  async validateResult(id, payload) {
+    return api.patch(`/examens/${id}/result`, {
+      resultText: payload.resultText,
+      ...(payload.resultConclusion
+        ? {
+            resultConclusion:
+              payload.resultConclusion,
+          }
+        : {}),
+    })
   },
 }

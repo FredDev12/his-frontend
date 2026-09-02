@@ -246,7 +246,7 @@ export const notificationsService = {
   },
 
   connectRealtime({ onNotification, onConnect, onDisconnect, onError } = {}) {
-    const socketUrl = import.meta.env.VITE_SOCKET_URL
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || '/'
 
     if (!socketUrl) {
       return {
@@ -334,5 +334,8 @@ export const notificationsService = {
     }
   },
 }
+
+
+
 
 

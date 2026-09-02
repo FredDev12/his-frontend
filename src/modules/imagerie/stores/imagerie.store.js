@@ -1,446 +1,374 @@
 import { defineStore } from 'pinia'
-import { imagerieService } from '@/modules/imagerie/services/imagerie.service'
-import { useToastStore } from '@/shared/stores/toast.store'
+
 import {
-  statusBroadcastService,
-  HIS_STATUS_MODULES,
-  HIS_STATUSES,
-} from '@/shared/services/status-broadcast.service'
-import { patientFullName } from '@/shared/utils/patient'
+  IMAGING_TYPES,
+  imagerieService,
+} from '@/modules/imagerie/services/imagerie.service'
+import { useToastStore } from '@/shared/stores/toast.store'
 
-function pick(obj, keys, fallback = '') {
-  for (const key of keys) {
-    if (obj && obj[key] !== undefined && obj[key] !== null && obj[key] !== '') {
-      return obj[key]
-    }
-  }
-
-  return fallback
-}
-
-function normalizeExam(exam) {
-  if (!exam) return null
-
-  return {
-    type: pick(exam, ['type', 'examen', 'nom', 'name'], '—'),
-    zone: pick(exam, ['zone', 'region', 'région', 'partie_corps', 'partieCorps'], ''),
-    indication: pick(exam, ['indication', 'motif', 'raison'], ''),
-    date: pick(exam, ['date', 'date_examen', 'dateExamen'], ''),
-    conclusion: pick(
-      exam,
-      ['conclusion', 'resultat', 'résultat', 'compte_rendu', 'compteRendu'],
-      '',
-    ),
-    statut: pick(exam, ['statut', 'status'], ''),
-    raw: exam,
-  }
-}
+const PENDING_STATUSES = new Set([
+  'DEMANDE',
+  'EN_COURS',
+])
+const VALIDATED_STATUS = 'RESULTAT_DISPONIBLE'
+const IMAGING_TYPE_SET = new Set(IMAGING_TYPES)
 
 function normalizeImagerie(item) {
   if (!item) return null
+  if (!IMAGING_TYPE_SET.has(item.type)) return null
 
-  const raw = item
-
-  const patient =
-    raw.patient ||
-    raw.identification_patient ||
-    raw.identificationPatient ||
-    raw.consultation?.identification_patient ||
-    raw.reception?.identification_patient ||
-    {}
-
-  const examensRaw =
-    raw.examens || raw.examens_imagerie || raw.imageries || raw.images || raw.tests || []
-
-  const examens = Array.isArray(examensRaw)
-    ? examensRaw.map(normalizeExam).filter(Boolean)
-    : [normalizeExam(examensRaw)].filter(Boolean)
-
-  const firstExam = examens[0] || {}
-
-  const conclusionGlobale =
-    examens
-      .filter((exam) => exam.conclusion)
-      .map((exam) => `${exam.type}: ${exam.conclusion}`)
-      .join(' · ') || ''
+  const patient = item.patient || {}
+  const episode = item.episode || {}
+  const consultation = item.consultation || {}
 
   return {
-    raw,
+    raw: item,
 
-    id: pick(raw, ['id', 'identifiant', 'imagerie_id', 'exam_id']),
-    consultation_id: pick(
-      raw,
-      ['consultation_id', 'consultationId'],
-      pick(raw.consultation, ['id']),
-    ),
-    reception_id: pick(raw, ['reception_id', 'receptionId'], pick(raw.reception, ['id'])),
+    id: String(item.id || ''),
+    examen_code: item.examenCode || '—',
 
-    numero_patient: pick(
-      patient,
-      ['numero_patient', 'numeroPatient'],
-      pick(raw, ['numero_patient', 'numeroPatient'], '—'),
-    ),
+    consultation_id:
+      consultation.id ||
+      item.consultationId ||
+      '',
+    consultation_code:
+      consultation.consultationCode ||
+      '—',
 
-    numero_fiche: pick(
-      raw,
-      ['numero_fiche', 'numeroFiche'],
-      pick(raw.consultation, ['numero_fiche'], pick(raw.reception, ['numero_fiche'], '—')),
-    ),
+    episode_id:
+      episode.id ||
+      item.episodeId ||
+      '',
+    episode_code:
+      episode.episodeCode ||
+      '—',
+    episode_status:
+      episode.status ||
+      '',
 
-    nom: pick(patient, ['nom'], pick(raw, ['nom'])),
-    postnom: pick(patient, ['postnom'], pick(raw, ['postnom'])),
-    prenom: pick(patient, ['prenom', 'prénom'], pick(raw, ['prenom', 'prénom'])),
+    patient_id:
+      patient.id ||
+      item.patientId ||
+      '',
+    numero_patient:
+      patient.patientCode ||
+      '—',
 
-    examen_principal: firstExam.type || pick(raw, ['type', 'examen'], '—'),
-    zone: firstExam.zone || pick(raw, ['zone', 'region', 'région'], ''),
-    indication: firstExam.indication || pick(raw, ['indication', 'motif'], ''),
-    date: firstExam.date || pick(raw, ['date', 'date_examen', 'created_at'], ''),
-    conclusion: conclusionGlobale || pick(raw, ['conclusion', 'resultat', 'résultat'], ''),
-    examens,
+    nom: patient.lastName || '',
+    postnom: '',
+    prenom: patient.firstName || '',
 
-    statut: pick(raw, ['statut', 'status'], conclusionGlobale ? 'completed' : 'pending'),
-    created_at: pick(raw, ['created_at', 'createdAt', 'date_creation'], ''),
+    type: item.type || '',
+    examen_principal: item.name || '—',
+    indication_clinique:
+      item.clinicalIndication || '',
+    statut: item.status || '',
+
+    resultat: item.resultText || '',
+    conclusion:
+      item.resultConclusion || '',
+    resultat_at:
+      item.resultAt || null,
+
+    demande_par:
+      item.requestedByUser || null,
+    realise_par:
+      item.performedByUser || null,
+    valide_par:
+      item.resultValidatedByUser || null,
+
+    created_at: item.createdAt || '',
+    updated_at: item.updatedAt || '',
   }
 }
 
 function normalizeListResponse(payload) {
-  const rawItems =
-    payload?.data ||
-    payload?.données ||
-    payload?.imagerie ||
-    payload?.imageries ||
-    payload?.examens ||
-    payload?.items ||
-    payload?.results ||
-    payload?.resultats ||
-    []
+  const data = payload?.data || {}
 
-  const items = Array.isArray(rawItems) ? rawItems.map(normalizeImagerie).filter(Boolean) : []
+  const rawItems = Array.isArray(data?.items)
+    ? data.items
+    : Array.isArray(payload?.items)
+      ? payload.items
+      : []
 
-  const pagination = payload?.pagination || payload?.meta || {}
+  const items = rawItems
+    .map(normalizeImagerie)
+    .filter(Boolean)
 
-  const page = Number(payload?.page || pagination.page || pagination.currentPage || 1)
-
+  const page = Number(
+    data?.page ||
+      payload?.page ||
+      1,
+  )
   const limite = Number(
-    payload?.limit ||
-      payload?.limite ||
-      pagination.limit ||
-      pagination.limite ||
-      pagination.perPage ||
+    data?.limit ||
+      payload?.limit ||
       10,
   )
 
-  const total = Number(
-    payload?.total ||
-      payload?.count ||
-      pagination.total ||
-      pagination.totalItems ||
-      items.length ||
-      0,
+  /*
+   * Pour le rôle IMAGERIE, le backend R4.4G1 filtre déjà
+   * strictement le périmètre par type + site.
+   *
+   * Le filtre local ci-dessus reste une défense UX pour
+   * les profils ADMIN, sans remplacer l'autorité backend.
+   */
+  const rawTotal = Number(
+    data?.count ??
+      payload?.count ??
+      items.length,
   )
 
-  const totalPages = Number(
-    payload?.pages ||
-      payload?.totalPages ||
-      pagination.pages ||
-      pagination.totalPages ||
-      Math.ceil(total / limite) ||
-      1,
-  )
+  const total =
+    rawItems.length === items.length
+      ? rawTotal
+      : items.length
 
   return {
     items,
     total,
     page,
     limite,
-    hasNext: page < totalPages,
+    hasNext:
+      rawItems.length === items.length
+        ? page * limite < rawTotal
+        : false,
     hasPrev: page > 1,
   }
 }
 
 function normalizeSingleResponse(payload) {
-  const examen =
-    payload?.imagerie ||
-    payload?.examen ||
-    payload?.data ||
-    payload?.données ||
-    payload?.result ||
-    payload
-
-  return normalizeImagerie(examen)
+  return normalizeImagerie(
+    payload?.data?.item ||
+      payload?.item ||
+      payload?.data ||
+      payload,
+  )
 }
 
-export const useImagerieStore = defineStore('imagerie', {
-  state: () => ({
-    examens: [],
-    selectedExamen: null,
+export const useImagerieStore = defineStore(
+  'imagerie',
+  {
+    state: () => ({
+      examens: [],
+      selectedExamen: null,
 
-    loading: false,
-    saving: false,
-    deleting: false,
-    searching: false,
+      loading: false,
+      saving: false,
+      searching: false,
 
-    error: '',
+      error: '',
 
-    pagination: {
-      page: 1,
-      limite: 10,
-      total: 0,
-      hasNext: false,
-      hasPrev: false,
+      pagination: {
+        page: 1,
+        limite: 10,
+        total: 0,
+        hasNext: false,
+        hasPrev: false,
+      },
+
+      filters: {
+        q: '',
+        statut: '',
+        type: '',
+      },
+    }),
+
+    getters: {
+      imagerieKpis: (state) => {
+        const items = state.examens || []
+
+        return {
+          total:
+            state.pagination.total ||
+            items.length,
+          examensEnAttente:
+            items.filter((item) =>
+              PENDING_STATUSES.has(
+                item.statut,
+              ),
+            ).length,
+          comptesRendusDisponibles:
+            items.filter(
+              (item) =>
+                item.statut ===
+                VALIDATED_STATUS,
+            ).length,
+        }
+      },
     },
 
-    filters: {
-      q: '',
-      statut: '',
-      type: '',
-    },
-  }),
+    actions: {
+      async fetchExamens(params = {}) {
+        this.loading = true
+        this.error = ''
 
-  actions: {
-    async fetchExamens(params = {}) {
-      this.loading = true
-      this.error = ''
+        try {
+          const payload =
+            await imagerieService.list({
+              page:
+                params.page ||
+                this.pagination.page,
+              limit:
+                params.limit ||
+                params.limite ||
+                this.pagination.limite,
+              q:
+                params.q ??
+                this.filters.q,
+              statut:
+                params.statut ??
+                this.filters.statut,
+              type:
+                params.type ??
+                this.filters.type,
+            })
 
-      try {
-        const payload = await imagerieService.list({
-          page: params.page || this.pagination.page,
-          limit: params.limit || params.limite || this.pagination.limite,
-        })
+          const normalized =
+            normalizeListResponse(payload)
 
-        const normalized = normalizeListResponse(payload)
+          this.examens =
+            normalized.items
+          this.pagination = {
+            page: normalized.page,
+            limite: normalized.limite,
+            total: normalized.total,
+            hasNext:
+              normalized.hasNext,
+            hasPrev:
+              normalized.hasPrev,
+          }
 
-        this.examens = normalized.items
-        this.pagination = {
-          page: normalized.page,
-          limite: normalized.limite,
-          total: normalized.total,
-          hasNext: normalized.hasNext,
-          hasPrev: normalized.hasPrev,
+          return normalized
+        } catch (error) {
+          this.error =
+            error?.message ||
+            'Impossible de charger les examens d’imagerie.'
+          throw error
+        } finally {
+          this.loading = false
+        }
+      },
+
+      async searchExamens(filters = {}) {
+        this.searching = true
+        this.error = ''
+
+        this.filters = {
+          q: filters.q ?? '',
+          statut:
+            filters.statut ?? '',
+          type: filters.type ?? '',
         }
 
-        return normalized
-      } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Impossible de charger les examens d’imagerie.'
-
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async searchExamens(filters = {}) {
-      this.searching = true
-      this.error = ''
-
-      this.filters = {
-        q: filters.q ?? '',
-        statut: filters.statut ?? '',
-        type: filters.type ?? '',
-      }
-
-      try {
-        await this.fetchExamens({ page: 1 })
-
-        const q = String(this.filters.q || '')
-          .toLowerCase()
-          .trim()
-
-        this.examens = this.examens.filter((item) => {
-          const fullName = [item.nom, item.postnom, item.prenom]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase()
-
-          const matchesQ =
-            !q ||
-            fullName.includes(q) ||
-            String(item.numero_patient || '')
-              .toLowerCase()
-              .includes(q) ||
-            String(item.numero_fiche || '')
-              .toLowerCase()
-              .includes(q) ||
-            String(item.examen_principal || '')
-              .toLowerCase()
-              .includes(q) ||
-            String(item.zone || '')
-              .toLowerCase()
-              .includes(q) ||
-            String(item.indication || '')
-              .toLowerCase()
-              .includes(q) ||
-            String(item.conclusion || '')
-              .toLowerCase()
-              .includes(q)
-
-          const matchesStatut = !this.filters.statut || item.statut === this.filters.statut
-          const matchesType = !this.filters.type || item.examen_principal === this.filters.type
-
-          return matchesQ && matchesStatut && matchesType
-        })
-
-        this.pagination = {
-          page: 1,
-          limite: this.examens.length || 10,
-          total: this.examens.length,
-          hasNext: false,
-          hasPrev: false,
+        try {
+          return await this.fetchExamens({
+            page: 1,
+            q: this.filters.q,
+            statut:
+              this.filters.statut,
+            type: this.filters.type,
+          })
+        } finally {
+          this.searching = false
         }
-      } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Recherche imagerie impossible.'
+      },
 
-        throw error
-      } finally {
-        this.searching = false
-      }
-    },
+      async fetchExamenById(id) {
+        this.loading = true
+        this.error = ''
+        this.selectedExamen = null
 
-    async fetchExamenById(id) {
-      this.loading = true
-      this.error = ''
-      this.selectedExamen = null
+        try {
+          const payload =
+            await imagerieService.getById(
+              id,
+            )
 
-      try {
-        const payload = await imagerieService.getById(id)
-        this.selectedExamen = normalizeSingleResponse(payload)
+          const normalized =
+            normalizeSingleResponse(
+              payload,
+            )
 
-        return this.selectedExamen
-      } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Examen d’imagerie introuvable.'
+          if (!normalized) {
+            throw new Error(
+              'Cet examen ne relève pas du périmètre Imagerie.',
+            )
+          }
 
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
+          this.selectedExamen =
+            normalized
 
-    async createExamen(payload) {
-      const toast = useToastStore()
-
-      this.saving = true
-      this.error = ''
-
-      try {
-        const response = await imagerieService.create(payload)
-        const created = normalizeSingleResponse(response)
-
-        toast.success('Demande d’imagerie créée avec succès.')
-
-        await statusBroadcastService.broadcastSafe({
-          module: HIS_STATUS_MODULES.IMAGERIE,
-          id: created?.id,
-          status: HIS_STATUSES.CREATED,
-          details: {
-            numero_fiche: created?.numero_fiche,
-            numero_patient: created?.numero_patient,
-            patient: patientFullName(created),
-            action: 'IMAGING_EXAM_CREATED',
-            message: 'Demande d’imagerie créée',
-          },
-        })
-        return created
-      } catch (error) {
-        const message =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Création de la demande d’imagerie impossible.'
-
-        this.error = message
-        toast.error(message)
-
-        throw error
-      } finally {
-        this.saving = false
-      }
-    },
-
-    async updateExamen(id, payload) {
-      const toast = useToastStore()
-
-      this.saving = true
-      this.error = ''
-
-      try {
-        const response = await imagerieService.update(id, payload)
-        const updated = normalizeSingleResponse(response)
-
-        if (updated) {
-          this.selectedExamen = updated
+          return normalized
+        } catch (error) {
+          this.error =
+            error?.message ||
+            'Examen d’imagerie introuvable.'
+          throw error
+        } finally {
+          this.loading = false
         }
+      },
 
-        toast.success('Examen d’imagerie mis à jour avec succès.')
-        await statusBroadcastService.broadcastSafe({
-          module: HIS_STATUS_MODULES.IMAGERIE,
-          id: updated?.id || id,
-          status: HIS_STATUSES.IMAGING_RESULT_AVAILABLE,
-          details: {
-            numero_fiche: updated?.numero_fiche,
-            numero_patient: updated?.numero_patient,
-            patient: patientFullName(updated),
-            action: 'IMAGING_RESULT_UPDATED',
-            message: 'Résultat imagerie disponible ou mis à jour',
-          },
-        })
-        return updated
-      } catch (error) {
-        const message =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Mise à jour de l’examen d’imagerie impossible.'
+      async validateResult(id, payload) {
+        const toast =
+          useToastStore()
 
-        this.error = message
-        toast.error(message)
+        this.saving = true
+        this.error = ''
 
-        throw error
-      } finally {
-        this.saving = false
-      }
-    },
+        try {
+          const response =
+            await imagerieService.validateResult(
+              id,
+              payload,
+            )
 
-    async removeExamen(id) {
-      const toast = useToastStore()
+          const updated =
+            normalizeSingleResponse(
+              response,
+            )
 
-      this.deleting = true
-      this.error = ''
+          this.selectedExamen =
+            updated
 
-      try {
-        await imagerieService.remove(id)
+          const index =
+            this.examens.findIndex(
+              (item) =>
+                String(item.id) ===
+                String(id),
+            )
 
-        this.examens = this.examens.filter((item) => String(item.id) !== String(id))
+          if (
+            index >= 0 &&
+            updated
+          ) {
+            this.examens[index] =
+              updated
+          }
 
-        toast.success('Examen d’imagerie supprimé avec succès.')
-        await statusBroadcastService.broadcastSafe({
-          module: HIS_STATUS_MODULES.IMAGERIE,
-          id,
-          status: HIS_STATUSES.DELETED,
-          details: {
-            action: 'IMAGING_EXAM_DELETED',
-            message: 'Examen imagerie supprimé',
-          },
-        })
-      } catch (error) {
-        const message =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Suppression de l’examen d’imagerie impossible.'
+          toast.success(
+            'Compte rendu d’imagerie validé avec succès.',
+          )
 
-        this.error = message
-        toast.error(message)
-
-        throw error
-      } finally {
-        this.deleting = false
-      }
+          return updated
+        } catch (error) {
+          this.error =
+            error?.message ||
+            'Impossible de valider le compte rendu.'
+          throw error
+        } finally {
+          this.saving = false
+        }
+      },
     },
   },
-})
+)
+
+export {
+  normalizeImagerie,
+  normalizeListResponse,
+  normalizeSingleResponse,
+  PENDING_STATUSES,
+  VALIDATED_STATUS,
+}

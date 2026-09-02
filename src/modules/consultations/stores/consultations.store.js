@@ -1,16 +1,15 @@
-﻿import { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
+
 import { consultationsService } from '@/modules/consultations/services/consultations.service'
-import { useToastStore } from '@/shared/stores/toast.store'
-import {
-  statusBroadcastService,
-  HIS_STATUS_MODULES,
-  HIS_STATUSES,
-} from '@/shared/services/status-broadcast.service'
-import { patientFullName } from '@/shared/utils/patient'
 
 function pick(obj, keys, fallback = '') {
   for (const key of keys) {
-    if (obj && obj[key] !== undefined && obj[key] !== null && obj[key] !== '') {
+    if (
+      obj &&
+      obj[key] !== undefined &&
+      obj[key] !== null &&
+      obj[key] !== ''
+    ) {
       return obj[key]
     }
   }
@@ -19,8 +18,14 @@ function pick(obj, keys, fallback = '') {
 }
 
 function readText(value, fallback = '') {
-  if (!value) return fallback
-  if (typeof value === 'string') return value
+  if (value === undefined || value === null || value === '') {
+    return fallback
+  }
+
+  if (typeof value === 'string') {
+    return value
+  }
+
   if (typeof value === 'object') {
     return (
       value.resume ||
@@ -36,65 +41,72 @@ function readText(value, fallback = '') {
 }
 
 function readDiagnostic(value, fallback = '') {
-  if (!value) return fallback
+  if (value === undefined || value === null || value === '') {
+    return fallback
+  }
 
   if (typeof value === 'string') {
     try {
-      const parsed = JSON.parse(value)
-      return readDiagnostic(parsed, fallback)
+      return readDiagnostic(
+        JSON.parse(value),
+        fallback,
+      )
     } catch {
       return value
     }
   }
 
-  if (typeof value === 'object') {
-    const diagnosticRetenu =
-      value.diagnostic_retenu ||
-      value.diagnosticRetenu ||
-      value.resume ||
-      value.résumé ||
-      value.description ||
-      ''
-
-    const hypotheses =
-      value.hypotheses_diagnostiques ||
-      value.hypothèses_diagnostiques ||
-      value.hypotheses ||
-      value.hypothèses ||
-      ''
-
-    const gravite = value.gravite || value.gravité || {}
-
-    const graviteLabel = gravite.grave
-      ? 'Grave'
-      : gravite.moderee || gravite.modérée
-        ? 'Modérée'
-        : gravite.legere || gravite.légère
-          ? 'Légère'
-          : ''
-
-    const parts = []
-
-    if (diagnosticRetenu) {
-      parts.push(`Diagnostic retenu : ${diagnosticRetenu}`)
-    }
-
-    if (hypotheses) {
-      parts.push(`Hypothèses : ${hypotheses}`)
-    }
-
-    if (graviteLabel) {
-      parts.push(`Gravité : ${graviteLabel}`)
-    }
-
-    return parts.join(' \n ') || fallback
+  if (typeof value !== 'object') {
+    return String(value)
   }
 
-  return String(value)
+  const retained =
+    value.diagnostic_retenu ||
+    value.diagnosticRetenu ||
+    value.resume ||
+    value.résumé ||
+    value.description ||
+    ''
+
+  const hypotheses =
+    value.hypotheses_diagnostiques ||
+    value.hypothèses_diagnostiques ||
+    value.hypotheses ||
+    value.hypothèses ||
+    ''
+
+  const severity =
+    value.gravite ||
+    value.gravité ||
+    {}
+
+  const severityLabel = severity.grave
+    ? 'Grave'
+    : severity.moderee || severity.modérée
+      ? 'Modérée'
+      : severity.legere || severity.légère
+        ? 'Légère'
+        : ''
+
+  return [
+    retained
+      ? `Diagnostic retenu : ${retained}`
+      : '',
+    hypotheses
+      ? `Hypothèses : ${hypotheses}`
+      : '',
+    severityLabel
+      ? `Gravité : ${severityLabel}`
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' · ') || fallback
 }
 
 function normalizeConsultation(item) {
-  if (!item) return null
+  if (!item || typeof item !== 'object') {
+    return null
+  }
 
   const raw = item
   const patient =
@@ -105,104 +117,323 @@ function normalizeConsultation(item) {
     raw.triage?.identification_patient ||
     {}
 
+  const episode =
+    raw.episode ||
+    raw.reception?.episode ||
+    {}
+
+  const doctorUser =
+    raw.doctorUser ||
+    raw.medecin ||
+    raw.médecin ||
+    {}
+
   const pgad = raw.pgad || {}
-  const etatGeneral = raw.etat_general || raw.état_général || {}
-  const anamnese = raw.anamnese || {}
-  const examenClinique = raw.examen_clinique || raw.examenClinique || {}
-  const diagnostique = raw.diagnostique || raw.diagnostic || {}
-  const plan = raw.plan_prise_en_charge || raw.planPriseEnCharge || {}
+  const generalState =
+    raw.etat_general ||
+    raw.état_général ||
+    {}
+
+  const anamnesis =
+    raw.anamnese ||
+    raw.anamnèse ||
+    {}
+
+  const clinicalExam =
+    raw.examen_clinique ||
+    raw.examenClinique ||
+    {}
+
+  const legacyDiagnosis =
+    raw.diagnostique ||
+    raw.diagnostic ||
+    {}
+
+  const legacyPlan =
+    raw.plan_prise_en_charge ||
+    raw.planPriseEnCharge ||
+    {}
 
   return {
     raw,
 
-    id: pick(raw, ['id', 'identifiant', 'consultation_id']),
-    reception_id: pick(raw, ['reception_id', 'receptionId'], pick(raw.reception, ['id'])),
-    triage_id: pick(raw, ['triage_id', 'triageId'], pick(raw.triage, ['id'])),
+    id: pick(
+      raw,
+      ['id', 'identifiant', 'consultation_id'],
+    ),
+
+    consultation_code: pick(
+      raw,
+      ['consultationCode', 'consultation_code'],
+      '—',
+    ),
+
+    reception_id: pick(
+      raw,
+      ['reception_id', 'receptionId'],
+      pick(raw.reception, ['id']),
+    ),
+
+    triage_id: pick(
+      raw,
+      ['triage_id', 'triageId'],
+      pick(raw.triage, ['id']),
+    ),
 
     numero_patient: pick(
       patient,
-      ['numero_patient', 'numeroPatient'],
-      pick(raw, ['numero_patient', 'numeroPatient'], '—'),
+      [
+        'patientCode',
+        'numero_patient',
+        'numeroPatient',
+      ],
+      pick(
+        raw,
+        ['numero_patient', 'numeroPatient'],
+        '—',
+      ),
     ),
+
     numero_fiche: pick(
-      raw,
-      ['numero_fiche', 'numeroFiche'],
-      pick(raw.reception, ['numero_fiche'], '—'),
+      episode,
+      ['episodeCode'],
+      pick(
+        raw,
+        ['numero_fiche', 'numeroFiche'],
+        pick(
+          raw.reception,
+          ['numero_fiche'],
+          '—',
+        ),
+      ),
     ),
 
-    nom: pick(patient, ['nom'], pick(raw, ['nom'])),
-    postnom: pick(patient, ['postnom'], pick(raw, ['postnom'])),
-    prenom: pick(patient, ['prenom', 'prénom'], pick(raw, ['prenom', 'prénom'])),
-    sexe: pick(patient, ['sexe'], pick(raw, ['sexe'], '—')),
-    age: pick(patient, ['age', 'âge'], pick(raw, ['age', 'âge'], '')),
+    nom: pick(
+      patient,
+      ['lastName', 'nom'],
+      pick(raw, ['nom']),
+    ),
 
-    plaintes: readText(pgad.plaintes || raw.plaintes),
-    histoire: readText(pgad.histoire || raw.histoire),
-    antecedents: readText(pgad.antecedents || pgad.antécédents || raw.antecedents),
-    deroulement: readText(pgad.deroulement || pgad.déroulement || raw.deroulement),
+    postnom: pick(
+      patient,
+      ['middleName', 'postnom'],
+      pick(raw, ['postnom']),
+    ),
+
+    prenom: pick(
+      patient,
+      ['firstName', 'prenom', 'prénom'],
+      pick(raw, ['prenom', 'prénom']),
+    ),
+
+    sexe: pick(
+      patient,
+      ['gender', 'sexe'],
+      pick(raw, ['sexe'], '—'),
+    ),
+
+    age: pick(
+      patient,
+      ['estimatedAge', 'age', 'âge'],
+      pick(raw, ['age', 'âge'], ''),
+    ),
+
+    plaintes: readText(
+      raw.chiefComplaint ||
+      pgad.plaintes ||
+      raw.plaintes,
+    ),
+
+    histoire: readText(
+      raw.illnessHistory ||
+      pgad.histoire ||
+      raw.histoire,
+    ),
+
+    antecedents: readText(
+      raw.medicalHistory ||
+      pgad.antecedents ||
+      pgad.antécédents ||
+      raw.antecedents,
+    ),
+
+    deroulement: readText(
+      pgad.deroulement ||
+      pgad.déroulement ||
+      raw.deroulement,
+    ),
 
     etat_general: readText(
-      etatGeneral.resume || etatGeneral.résumé || etatGeneral.description || raw.etat_general,
-    ),
-    anamnese: readText(anamnese.resume || anamnese.résumé || anamnese.description || raw.anamnese),
-    examen_clinique: readText(
-      examenClinique.resume ||
-        examenClinique.résumé ||
-        examenClinique.description ||
-        raw.examen_clinique,
-    ),
-    diagnostique: readDiagnostic(raw.diagnostique || raw.diagnostic || diagnostique),
-    plan_prise_en_charge: readText(
-      plan.resume || plan.résumé || plan.description || raw.plan_prise_en_charge,
+      generalState.resume ||
+      generalState.résumé ||
+      generalState.description ||
+      raw.etat_general,
     ),
 
-    service: pick(raw, ['service', 'service_entree', 'serviceEntree'], 'Consultation'),
-    statut: pick(raw, ['statut', 'status'], 'active'),
-    created_at: pick(raw, ['created_at', 'createdAt', 'date_creation'], ''),
+    anamnese: readText(
+      anamnesis.resume ||
+      anamnesis.résumé ||
+      anamnesis.description ||
+      raw.anamnese,
+    ),
+
+    examen_clinique: readText(
+      raw.clinicalExam ||
+      clinicalExam.resume ||
+      clinicalExam.résumé ||
+      clinicalExam.description ||
+      raw.examen_clinique,
+    ),
+
+    diagnostique: readDiagnostic(
+      raw.finalDiagnosis ||
+      raw.provisionalDiagnosis ||
+      raw.diagnostique ||
+      raw.diagnostic ||
+      legacyDiagnosis,
+    ),
+
+    plan_prise_en_charge: readText(
+      raw.treatmentPlan ||
+      legacyPlan.resume ||
+      legacyPlan.résumé ||
+      legacyPlan.description ||
+      raw.plan_prise_en_charge,
+    ),
+
+    medecin:
+      [
+        pick(doctorUser, ['firstName']),
+        pick(doctorUser, ['lastName']),
+      ]
+        .filter(Boolean)
+        .join(' ') ||
+      pick(
+        raw,
+        ['medecin_nom', 'medecinName'],
+        '—',
+      ),
+
+    service: pick(
+      raw,
+      ['service', 'service_entree', 'serviceEntree'],
+      'Consultation',
+    ),
+
+    episode_status: pick(
+      episode,
+      ['status'],
+      '—',
+    ),
+
+    decision: pick(
+      raw,
+      ['decision'],
+      null,
+    ),
+
+    statut: pick(
+      raw,
+      ['status', 'statut'],
+      'EN_COURS',
+    ),
+
+    created_at: pick(
+      raw,
+      [
+        'startedAt',
+        'created_at',
+        'createdAt',
+        'date_creation',
+      ],
+      '',
+    ),
+
+    closed_at: pick(
+      raw,
+      ['closedAt', 'closed_at'],
+      null,
+    ),
+
+    updated_at: pick(
+      raw,
+      ['updatedAt', 'updated_at'],
+      '',
+    ),
   }
 }
 
 function normalizeListResponse(payload) {
+  const container =
+    payload?.data &&
+    !Array.isArray(payload.data)
+      ? payload.data
+      : payload || {}
+
   const rawItems =
-    payload?.data ||
-    payload?.données ||
-    payload?.consultations ||
-    payload?.items ||
-    payload?.results ||
-    payload?.resultats ||
-    []
+    container.items ||
+    container.consultations ||
+    container.results ||
+    container.resultats ||
+    container.données ||
+    (Array.isArray(payload?.data)
+      ? payload.data
+      : [])
 
-  const items = Array.isArray(rawItems) ? rawItems.map(normalizeConsultation).filter(Boolean) : []
+  const items = Array.isArray(rawItems)
+    ? rawItems
+        .map(normalizeConsultation)
+        .filter(Boolean)
+    : []
 
-  const pagination = payload?.pagination || payload?.meta || {}
+  const pagination =
+    container.pagination ||
+    container.meta ||
+    {}
 
-  const page = Number(payload?.page || pagination.page || pagination.currentPage || 1)
+  const page = Math.max(
+    1,
+    Number(
+      container.page ||
+      pagination.page ||
+      pagination.currentPage ||
+      1,
+    ),
+  )
 
-  const limite = Number(
-    payload?.limit ||
-      payload?.limite ||
+  const limite = Math.max(
+    1,
+    Number(
+      container.limit ||
+      container.limite ||
       pagination.limit ||
       pagination.limite ||
       pagination.perPage ||
       10,
+    ),
   )
 
-  const total = Number(
-    payload?.total ||
-      payload?.count ||
-      pagination.total ||
-      pagination.totalItems ||
-      items.length ||
-      0,
+  const total = Math.max(
+    0,
+    Number(
+      container.count ??
+      container.total ??
+      pagination.total ??
+      pagination.totalItems ??
+      items.length,
+    ),
   )
 
-  const totalPages = Number(
-    payload?.pages ||
-      payload?.totalPages ||
+  const totalPages = Math.max(
+    1,
+    Number(
+      container.pages ||
+      container.totalPages ||
       pagination.pages ||
       pagination.totalPages ||
       Math.ceil(total / limite) ||
       1,
+    ),
   )
 
   return {
@@ -217,327 +448,492 @@ function normalizeListResponse(payload) {
 
 function normalizeSingleResponse(payload) {
   const consultation =
-    payload?.consultation || payload?.data || payload?.données || payload?.result || payload
+    payload?.item ||
+    payload?.data?.item ||
+    payload?.consultation ||
+    payload?.data?.consultation ||
+    payload?.data ||
+    payload?.données ||
+    payload?.result ||
+    payload
 
-  return normalizeConsultation(consultation)
+  return normalizeConsultation(
+    consultation,
+  )
 }
 
-export const useConsultationsStore = defineStore('consultations', {
-  state: () => ({
-    consultations: [],
-    selectedConsultation: null,
-
-    loading: false,
-    saving: false,
-    deleting: false,
-    searching: false,
-
-    error: '',
-
-    pagination: {
-      page: 1,
-      limite: 10,
-      total: 0,
-      hasNext: false,
-      hasPrev: false,
-    },
-
-    filters: {
-      q: '',
-      service: '',
-      statut: '',
-    },
-  }),
-
-  getters: {
-    consultationKpis: (state) => {
-      const items = state.consultations || []
-
-      const hasText = (value) => String(value || '').trim().length > 0
-
-      const includesAny = (value, keywords = []) => {
-        const text = String(value || '').toLowerCase()
-        return keywords.some((keyword) => text.includes(keyword))
-      }
-
-      return {
-        total: state.pagination.total || items.length,
-        consultationsToday: items.length,
-        patientsExamines: items.length,
-        diagnosticsPoses: items.filter((item) => hasText(item.diagnostique)).length,
-        examensDemandes: items.filter((item) =>
-          includesAny(item.plan_prise_en_charge, ['examen', 'laboratoire', 'imagerie'])
-        ).length,
-        ordonnances: items.filter((item) =>
-          includesAny(item.plan_prise_en_charge, ['prescription', 'ordonnance', 'traitement'])
-        ).length,
-        hospitalisations: items.filter((item) =>
-          includesAny(item.plan_prise_en_charge, ['hospital', 'admission'])
-        ).length,
-        sorties: items.filter((item) =>
-          includesAny(item.plan_prise_en_charge, ['sortie', 'domicile'])
-        ).length,
-        urgences: items.filter((item) =>
-          includesAny(
-            [
-              item.diagnostique,
-              item.plaintes,
-              item.plan_prise_en_charge,
-            ].join(" "),
-            ["urgent", "urgence", "grave", "critique"]
-          )
-        ).length,
-      }
-    },
-  },
-
-  actions: {
-    async fetchConsultations(params = {}) {
-      this.loading = true
-      this.error = ''
-
-      try {
-        const payload = await consultationsService.list({
-          page: params.page || this.pagination.page,
-          limit: params.limit || params.limite || this.pagination.limite,
-        })
-
-        const normalized = normalizeListResponse(payload)
-
-        this.consultations = normalized.items
-        this.pagination = {
-          page: normalized.page,
-          limite: normalized.limite,
-          total: normalized.total,
-          hasNext: normalized.hasNext,
-          hasPrev: normalized.hasPrev,
-        }
-
-        return normalized
-      } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Impossible de charger les consultations.'
-
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async searchConsultations(filters = {}) {
-      this.searching = true
-      this.error = ''
-
-      this.filters = {
-        q: filters.q ?? '',
-        service: filters.service ?? '',
-        statut: filters.statut ?? '',
-      }
-
-      try {
-        await this.fetchConsultations({ page: 1 })
-
-        const q = String(this.filters.q || '')
-          .toLowerCase()
-          .trim()
-
-        this.consultations = this.consultations.filter((item) => {
-          const fullName = [item.nom, item.postnom, item.prenom]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase()
-
-          const matchesQ =
-            !q ||
-            fullName.includes(q) ||
-            String(item.numero_patient || '')
-              .toLowerCase()
-              .includes(q) ||
-            String(item.numero_fiche || '')
-              .toLowerCase()
-              .includes(q) ||
-            String(item.diagnostique || '')
-              .toLowerCase()
-              .includes(q) ||
-            String(item.plaintes || '')
-              .toLowerCase()
-              .includes(q) ||
-            String(item.anamnese || '')
-              .toLowerCase()
-              .includes(q)
-
-          const matchesService = !this.filters.service || item.service === this.filters.service
-          const matchesStatut = !this.filters.statut || item.statut === this.filters.statut
-
-          return matchesQ && matchesService && matchesStatut
-        })
-
-        this.pagination = {
-          page: 1,
-          limite: this.consultations.length || 10,
-          total: this.consultations.length,
-          hasNext: false,
-          hasPrev: false,
-        }
-      } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Recherche consultation impossible.'
-
-        throw error
-      } finally {
-        this.searching = false
-      }
-    },
-
-    async fetchConsultationById(id) {
-      this.loading = true
-      this.error = ''
-      this.selectedConsultation = null
-
-      try {
-        const payload = await consultationsService.getById(id)
-        this.selectedConsultation = normalizeSingleResponse(payload)
-
-        return this.selectedConsultation
-      } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Consultation introuvable.'
-
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async createConsultation(payload) {
-      const toast = useToastStore()
-
-      this.saving = true
-      this.error = ''
-
-      try {
-        const response = await consultationsService.create(payload)
-        const created = normalizeSingleResponse(response)
-
-        toast.success('Consultation créée avec succès.')
-
-        await statusBroadcastService.broadcastSafe({
-          module: HIS_STATUS_MODULES.CONSULTATIONS,
-          id: created?.id,
-          status: HIS_STATUSES.CONSULTATION_CREATED,
-          details: {
-            numero_fiche: created?.numero_fiche,
-            numero_patient: created?.numero_patient,
-            patient: patientFullName(created),
-            action: 'CONSULTATION_CREATED',
-            message: 'Consultation créée',
-          },
-        })
-
-        return created
-      } catch (error) {
-        const message =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Création de la consultation impossible.'
-
-        this.error = message
-        toast.error(message)
-
-        throw error
-      } finally {
-        this.saving = false
-      }
-    },
-
-    async updateConsultation(id, payload) {
-      const toast = useToastStore()
-
-      this.saving = true
-      this.error = ''
-
-      try {
-        const response = await consultationsService.update(id, payload)
-        const updated = normalizeSingleResponse(response)
-
-        if (updated) {
-          this.selectedConsultation = updated
-        }
-
-        toast.success('Consultation mise à jour avec succès.')
-
-        await statusBroadcastService.broadcastSafe({
-          module: HIS_STATUS_MODULES.CONSULTATIONS,
-          id: updated?.id || id,
-          status: HIS_STATUSES.CONSULTATION_UPDATED,
-          details: {
-            numero_fiche: updated?.numero_fiche,
-            numero_patient: updated?.numero_patient,
-            patient: patientFullName(updated),
-            action: 'CONSULTATION_UPDATED',
-            message: 'Consultation mise à jour',
-          },
-        })
-
-        return updated
-      } catch (error) {
-        const message =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Mise à jour de la consultation impossible.'
-
-        this.error = message
-        toast.error(message)
-
-        throw error
-      } finally {
-        this.saving = false
-      }
-    },
-
-    async removeConsultation(id) {
-      const toast = useToastStore()
-
-      this.deleting = true
-      this.error = ''
-
-      try {
-        await consultationsService.remove(id)
-
-        this.consultations = this.consultations.filter((item) => String(item.id) !== String(id))
-
-        toast.success('Consultation supprimée avec succès.')
-
-        await statusBroadcastService.broadcastSafe({
-          module: HIS_STATUS_MODULES.CONSULTATIONS,
-          id,
-          status: HIS_STATUSES.DELETED,
-          details: {
-            action: 'CONSULTATION_DELETED',
-            message: 'Consultation supprimée',
-          },
-        })
-      } catch (error) {
-        const message =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Suppression de la consultation impossible.'
-
-        this.error = message
-        toast.error(message)
-
-        throw error
-      } finally {
-        this.deleting = false
-      }
-    },
-  },
+const CLINICAL_HISTORY_FIELD_LABELS = Object.freeze({
+  illnessHistory: 'Histoire de la maladie',
+  medicalHistory: 'Antécédents médicaux',
+  clinicalExam: 'Examen clinique',
+  provisionalDiagnosis: 'Diagnostic provisoire',
+  treatmentPlan: 'Plan de prise en charge',
 })
 
+function normalizeClinicalHistoryChange(change) {
+  if (!change || typeof change !== 'object') {
+    return null
+  }
 
+  const field = String(change.field || '').trim()
+
+  if (!CLINICAL_HISTORY_FIELD_LABELS[field]) {
+    return null
+  }
+
+  return {
+    field,
+    label: CLINICAL_HISTORY_FIELD_LABELS[field],
+    oldValue:
+      change.oldValue === undefined
+        ? null
+        : change.oldValue,
+    newValue:
+      change.newValue === undefined
+        ? null
+        : change.newValue,
+  }
+}
+
+function normalizeClinicalHistoryItem(item) {
+  if (!item || typeof item !== 'object') {
+    return null
+  }
+
+  const actor = item.actor || {}
+  const actorName = [
+    actor.firstName,
+    actor.lastName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim()
+
+  const changes = Array.isArray(item.changes)
+    ? item.changes
+        .map(normalizeClinicalHistoryChange)
+        .filter(Boolean)
+    : []
+
+  return {
+    id: String(item.id || ''),
+    occurredAt: item.occurredAt || '',
+    actor: {
+      id: actor.id || null,
+      name: actorName || 'Utilisateur non identifié',
+    },
+    roleCode: item.roleCode || null,
+    changes,
+  }
+}
+
+function normalizeClinicalHistoryResponse(payload) {
+  const container =
+    payload?.data &&
+    !Array.isArray(payload.data)
+      ? payload.data
+      : payload || {}
+
+  const rawItems = Array.isArray(container.items)
+    ? container.items
+    : []
+
+  const items = rawItems
+    .map(normalizeClinicalHistoryItem)
+    .filter(
+      (item) =>
+        item?.id &&
+        item.changes.length > 0,
+    )
+
+  const page = Math.max(
+    1,
+    Number(container.page || 1),
+  )
+  const limit = Math.max(
+    1,
+    Number(container.limit || 20),
+  )
+  const count = Math.max(
+    0,
+    Number(container.count ?? items.length),
+  )
+
+  return {
+    items,
+    page,
+    limit,
+    count,
+    hasPrev: page > 1,
+    hasNext: page * limit < count,
+  }
+}
+
+export const useConsultationsStore =
+  defineStore('consultations', {
+    state: () => ({
+      consultations: [],
+      selectedConsultation: null,
+      loading: false,
+      searching: false,
+      savingClinical: false,
+      requestingExamen: false,
+      examenRequestError: '',
+      creatingPrescription: false,
+      prescriptionCreateError: '',
+      clinicalHistoryLoading: false,
+      clinicalHistoryError: '',
+      clinicalHistoryItems: [],
+      clinicalHistoryPage: 1,
+      clinicalHistoryLimit: 20,
+      clinicalHistoryCount: 0,
+      clinicalHistoryHasPrev: false,
+      clinicalHistoryHasNext: false,
+      error: '',
+      clinicalSaveError: '',
+
+      pagination: {
+        page: 1,
+        limite: 10,
+        total: 0,
+        hasNext: false,
+        hasPrev: false,
+      },
+
+      filters: {
+        q: '',
+        service: '',
+        statut: '',
+      },
+    }),
+
+    actions: {
+      async fetchConsultations(
+        params = {},
+      ) {
+        this.loading = true
+        this.error = ''
+
+        try {
+          const payload =
+            await consultationsService.list({
+              page:
+                params.page ||
+                this.pagination.page,
+              limit:
+                params.limit ||
+                params.limite ||
+                this.pagination.limite,
+            })
+
+          const normalized =
+            normalizeListResponse(payload)
+
+          this.consultations =
+            normalized.items
+
+          this.pagination = {
+            page: normalized.page,
+            limite: normalized.limite,
+            total: normalized.total,
+            hasNext: normalized.hasNext,
+            hasPrev: normalized.hasPrev,
+          }
+
+          return normalized
+        } catch (error) {
+          this.error =
+            error?.message ||
+            'Impossible de charger les consultations.'
+
+          throw error
+        } finally {
+          this.loading = false
+        }
+      },
+
+      async searchConsultations(
+        filters = {},
+      ) {
+        this.searching = true
+        this.error = ''
+
+        this.filters = {
+          q: filters.q ?? '',
+          service: filters.service ?? '',
+          statut: filters.statut ?? '',
+        }
+
+        try {
+          await this.fetchConsultations({
+            page: 1,
+          })
+
+          const query = String(
+            this.filters.q || '',
+          )
+            .toLowerCase()
+            .trim()
+
+          this.consultations =
+            this.consultations.filter(
+              (item) => {
+                const fullName = [
+                  item.nom,
+                  item.postnom,
+                  item.prenom,
+                ]
+                  .filter(Boolean)
+                  .join(' ')
+                  .toLowerCase()
+
+                const matchesQuery =
+                  !query ||
+                  fullName.includes(query) ||
+                  String(
+                    item.numero_patient || '',
+                  )
+                    .toLowerCase()
+                    .includes(query) ||
+                  String(
+                    item.numero_fiche || '',
+                  )
+                    .toLowerCase()
+                    .includes(query) ||
+                  String(
+                    item.consultation_code || '',
+                  )
+                    .toLowerCase()
+                    .includes(query) ||
+                  String(
+                    item.diagnostique || '',
+                  )
+                    .toLowerCase()
+                    .includes(query) ||
+                  String(
+                    item.plaintes || '',
+                  )
+                    .toLowerCase()
+                    .includes(query)
+
+                const matchesService =
+                  !this.filters.service ||
+                  item.service ===
+                    this.filters.service
+
+                const matchesStatus =
+                  !this.filters.statut ||
+                  item.statut ===
+                    this.filters.statut
+
+                return (
+                  matchesQuery &&
+                  matchesService &&
+                  matchesStatus
+                )
+              },
+            )
+
+          this.pagination = {
+            page: 1,
+            limite:
+              this.consultations.length ||
+              10,
+            total:
+              this.consultations.length,
+            hasNext: false,
+            hasPrev: false,
+          }
+
+          return this.consultations
+        } catch (error) {
+          this.error =
+            error?.message ||
+            'Recherche consultation impossible.'
+
+          throw error
+        } finally {
+          this.searching = false
+        }
+      },
+
+      async fetchConsultationById(id) {
+        this.loading = true
+        this.error = ''
+        this.selectedConsultation = null
+
+        try {
+          const payload =
+            await consultationsService.getById(
+              id,
+            )
+
+          this.selectedConsultation =
+            normalizeSingleResponse(payload)
+
+          if (!this.selectedConsultation?.id) {
+            throw new Error(
+              'Consultation introuvable.',
+            )
+          }
+
+          return this.selectedConsultation
+        } catch (error) {
+          this.error =
+            error?.message ||
+            'Consultation introuvable.'
+
+          throw error
+        } finally {
+          this.loading = false
+        }
+      },
+
+      async updateClinical(id, payload) {
+        this.savingClinical = true
+        this.clinicalSaveError = ''
+
+        try {
+          const response =
+            await consultationsService.updateClinical(
+              id,
+              payload,
+            )
+
+          const updated =
+            normalizeSingleResponse(response)
+
+          if (!updated?.id) {
+            throw new Error(
+              'Le serveur n’a pas retourné le dossier clinique actualisé.',
+            )
+          }
+
+          this.selectedConsultation = updated
+
+          const index =
+            this.consultations.findIndex(
+              (item) =>
+                String(item.id) === String(updated.id),
+            )
+
+          if (index >= 0) {
+            this.consultations[index] = updated
+          }
+
+          return updated
+        } catch (error) {
+          this.clinicalSaveError =
+            error?.message ||
+            'Enregistrement clinique impossible.'
+
+          throw error
+        } finally {
+          this.savingClinical = false
+        }
+      },
+
+      async requestExamen(id, payload) {
+        this.requestingExamen = true
+        this.examenRequestError = ''
+
+        try {
+          return await consultationsService.requestExamen(
+            id,
+            payload,
+          )
+        } catch (error) {
+          this.examenRequestError =
+            error?.message ||
+            'Demande d’examen impossible.'
+
+          throw error
+        } finally {
+          this.requestingExamen = false
+        }
+      },
+
+      async createPrescription(id, payload) {
+        this.creatingPrescription = true
+        this.prescriptionCreateError = ''
+
+        try {
+          return await consultationsService.createPrescription(
+            id,
+            payload,
+          )
+        } catch (error) {
+          this.prescriptionCreateError =
+            error?.message ||
+            'Prescription impossible.'
+
+          throw error
+        } finally {
+          this.creatingPrescription = false
+        }
+      },
+
+      async fetchClinicalHistory(
+        id,
+        params = {},
+      ) {
+        this.clinicalHistoryLoading = true
+        this.clinicalHistoryError = ''
+
+        try {
+          const response =
+            await consultationsService.clinicalHistory(
+              id,
+              {
+                page: params.page || 1,
+                limit:
+                  params.limit ||
+                  this.clinicalHistoryLimit ||
+                  20,
+              },
+            )
+
+          const normalized =
+            normalizeClinicalHistoryResponse(response)
+
+          this.clinicalHistoryItems =
+            normalized.items
+          this.clinicalHistoryPage =
+            normalized.page
+          this.clinicalHistoryLimit =
+            normalized.limit
+          this.clinicalHistoryCount =
+            normalized.count
+          this.clinicalHistoryHasPrev =
+            normalized.hasPrev
+          this.clinicalHistoryHasNext =
+            normalized.hasNext
+
+          return normalized
+        } catch (error) {
+          this.clinicalHistoryError =
+            error?.message ||
+            'Historique clinique indisponible.'
+
+          throw error
+        } finally {
+          this.clinicalHistoryLoading = false
+        }
+      },
+
+      clearClinicalHistory() {
+        this.clinicalHistoryError = ''
+        this.clinicalHistoryItems = []
+        this.clinicalHistoryPage = 1
+        this.clinicalHistoryCount = 0
+        this.clinicalHistoryHasPrev = false
+        this.clinicalHistoryHasNext = false
+      },
+    },
+  })
+
+export {
+  normalizeConsultation,
+  normalizeListResponse,
+  normalizeSingleResponse,
+}

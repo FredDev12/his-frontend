@@ -1,93 +1,87 @@
 import api from '@/shared/services/api'
 
-const RESOURCE = '/agents'
+function unwrapPayload(response) {
+  if (response?.success && response?.data !== undefined) {
+    return response.data
+  }
 
-function unwrapResponse(response) {
-  return response?.data ?? response
-}
-
-function cleanParams(params = {}) {
-  return Object.fromEntries(
-    Object.entries(params).filter(
-      ([, value]) => value !== undefined && value !== null && value !== '',
-    ),
-  )
+  return response
 }
 
 export const agentsService = {
   async list(params = {}) {
-    const response = await api.get(RESOURCE, {
-      params: cleanParams({
+    const response = await api.get('/agents', {
+      params: {
         page: params.page || 1,
-        limit: params.limit || params.limite || 100,
-      }),
+        limit: params.limit || 100,
+      },
     })
 
-    return unwrapResponse(response)
+    return unwrapPayload(response)
   },
 
-  async search(params = {}) {
-    const response = await api.get(`${RESOURCE}/search`, {
-      params: cleanParams({
-        cac_id_co: params.cac_id_co,
-        nom_post: params.nom_post,
-        prenom: params.prenom,
-        site: params.site,
-        telephone: params.telephone,
-        page: params.page || 1,
-        limit: params.limit || params.limite || 100,
-      }),
+  async search(filters = {}) {
+    const response = await api.get('/agents/search', {
+      params: {
+        cac_id_co: filters.cac_id_co || undefined,
+        nom_post: filters.nom_post || undefined,
+        prenom: filters.prenom || undefined,
+        site: filters.site || undefined,
+        telephone: filters.telephone || undefined,
+        page: filters.page || 1,
+        limit: filters.limit || 100,
+      },
     })
 
-    return unwrapResponse(response)
+    return unwrapPayload(response)
   },
 
   async statistiques() {
-    const response = await api.get(`${RESOURCE}/statistiques`)
-    return unwrapResponse(response)
+    const response = await api.get('/agents/statistiques')
+    return unwrapPayload(response)
   },
 
   async getByCacId(cacId) {
-    const response = await api.get(`${RESOURCE}/cac/${encodeURIComponent(cacId)}`)
-    return unwrapResponse(response)
+    const response = await api.get(`/agents/cac/${encodeURIComponent(cacId)}`)
+    return unwrapPayload(response)
   },
 
   async getByNumericId(id) {
-    const response = await api.get(`${RESOURCE}/id/${id}`)
-    return unwrapResponse(response)
+    const response = await api.get(`/agents/id/${encodeURIComponent(id)}`)
+    return unwrapPayload(response)
   },
 
   async getBySite(siteName, params = {}) {
-    const response = await api.get(`${RESOURCE}/site/${encodeURIComponent(siteName)}`, {
-      params: cleanParams({
+    const response = await api.get(`/agents/site/${encodeURIComponent(siteName)}`, {
+      params: {
         page: params.page || 1,
-        limit: params.limit || params.limite || 100,
-      }),
+        limit: params.limit || 100,
+      },
     })
 
-    return unwrapResponse(response)
+    return unwrapPayload(response)
   },
 
   async getByFonction(fonction, params = {}) {
-    const response = await api.get(`${RESOURCE}/function/${encodeURIComponent(fonction)}`, {
-      params: cleanParams({
+    const response = await api.get(`/agents/function/${encodeURIComponent(fonction)}`, {
+      params: {
         page: params.page || 1,
-        limit: params.limit || params.limite || 100,
-      }),
+        limit: params.limit || 100,
+      },
     })
 
-    return unwrapResponse(response)
+    return unwrapPayload(response)
   },
 
   async getByField(fieldName, value, params = {}) {
-    const response = await api.get(`${RESOURCE}/field/${encodeURIComponent(fieldName)}`, {
-      params: cleanParams({
+    const response = await api.get(`/agents/field/${encodeURIComponent(fieldName)}`, {
+      params: {
         value,
         page: params.page || 1,
-        limit: params.limit || params.limite || 100,
-      }),
+        limit: params.limit || 100,
+      },
     })
 
-    return unwrapResponse(response)
+    return unwrapPayload(response)
   },
 }

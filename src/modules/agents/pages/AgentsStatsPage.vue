@@ -27,7 +27,7 @@ onMounted(async () => {
       <div>
         <h1 class="his-page-title">Statistiques agents CAC</h1>
 
-        <p class="his-page-subtitle">Répartition des agents par site, fonction, sexe et statut.</p>
+        <p class="his-page-subtitle">Répartition des agents par site, fonction et sexe selon le contrat API disponible.</p>
       </div>
 
       <RouterLink to="/agents">

@@ -1,6 +1,8 @@
 <script setup>
 import { reactive, watch } from 'vue'
+
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
+import BaseInput from '@/shared/ui/base/BaseInput.vue'
 import BaseSelect from '@/shared/ui/base/BaseSelect.vue'
 
 const props = defineProps({
@@ -8,9 +10,9 @@ const props = defineProps({
     type: Object,
     default: () => ({
       q: '',
-      urgence: '',
-      service: '',
-      paye: '',
+      payment: '',
+      status: '',
+      patientType: '',
     }),
   },
   loading: {
@@ -23,87 +25,119 @@ const emit = defineEmits(['search', 'reset'])
 
 const form = reactive({
   q: '',
-  urgence: '',
-  service: '',
-  paye: '',
+  payment: '',
+  status: '',
+  patientType: '',
 })
 
-const urgenceOptions = [
-  { label: 'Toutes', value: '' },
-  { label: 'Urgences uniquement', value: 'true' },
-  { label: 'Non urgentes', value: 'false' },
+const paymentOptions = [
+  { label: 'Tous paiements', value: '' },
+  { label: 'Frais requis', value: 'REQUIRED' },
+  { label: 'Frais non requis', value: 'NOT_REQUIRED' },
+  { label: 'Payé', value: 'PAID' },
+  { label: 'À régulariser', value: 'UNPAID' },
 ]
 
-const paiementOptions = [
-  { label: 'Tous', value: '' },
-  { label: 'Payées', value: 'true' },
-  { label: 'Non payées', value: 'false' },
+const statusOptions = [
+  { label: 'Tous statuts', value: '' },
+  { label: 'Admis', value: 'ADMIS' },
+  { label: 'Paiement en attente', value: 'EN_ATTENTE_PAIEMENT' },
+  { label: 'Brouillon', value: 'BROUILLON' },
+  { label: 'Annulée', value: 'ANNULE' },
 ]
 
-const serviceOptions = [
-  { label: 'Tous les services', value: '' },
-  { label: 'Médecine interne', value: 'MÉDECINE INTERNE' },
-  { label: 'Pédiatrie', value: 'PÉDIATRIE' },
-  { label: 'Gynéco-obstétrique', value: 'GYNÉCO-OBSTÉTRIQUE' },
-  { label: 'Chirurgie', value: 'CHIRURGIE' },
-  { label: 'Laboratoire', value: 'LABORATOIRE' },
-  { label: 'Imagerie', value: 'IMAGERIE' },
+const patientTypeOptions = [
+  { label: 'Tous types', value: '' },
+  { label: 'Public', value: 'PUBLIC' },
+  { label: 'Agent CAC', value: 'AGENT_CAC' },
+  { label: 'Ayant droit', value: 'AYANT_DROIT' },
 ]
 
 watch(
   () => props.filters,
   (value) => {
     form.q = value.q || ''
-    form.urgence = value.urgence || ''
-    form.service = value.service || ''
-    form.paye = value.paye || ''
+    form.payment = value.payment || ''
+    form.status = value.status || ''
+    form.patientType = value.patientType || ''
   },
   { immediate: true, deep: true },
 )
 
-function toBooleanOrEmpty(value) {
-  if (value === 'true') return true
-  if (value === 'false') return false
-  return ''
-}
-
 function submit() {
-  emit('search', {
-    q: form.q,
-    urgence: toBooleanOrEmpty(form.urgence),
-    service: form.service,
-    paye: toBooleanOrEmpty(form.paye),
-  })
+  if (props.loading) return
+  emit('search', { ...form })
 }
 
 function reset() {
+  if (props.loading) return
+
   form.q = ''
-  form.urgence = ''
-  form.service = ''
-  form.paye = ''
+  form.payment = ''
+  form.status = ''
+  form.patientType = ''
 
   emit('reset')
 }
 </script>
+
 <template>
-  <form class="grid gap-3 xl:grid-cols-6" @submit.prevent="submit">
-    <input
-      v-model="form.q"
-      type="search"
-      placeholder="Rechercher patient, fiche, téléphone..."
-      class="min-h-11 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm his-focus xl:col-span-2"
-    />
+  <form class="grid w-full grid-cols-1 gap-3 lg:grid-cols-12" @submit.prevent="submit">
+    <div class="min-w-0 lg:col-span-4">
+      <BaseInput
+        v-model="form.q"
+        type="search"
+        placeholder="Nom, numéro patient, réception, épisode, téléphone..."
+        :disabled="loading"
+      />
+    </div>
 
-    <BaseSelect v-model="form.service" :options="serviceOptions" placeholder="Service" />
+    <div class="min-w-0 lg:col-span-3">
+      <BaseSelect
+        v-model="form.payment"
+        :options="paymentOptions"
+        placeholder="Paiement"
+        :disabled="loading"
+      />
+    </div>
 
-    <BaseSelect v-model="form.urgence" :options="urgenceOptions" placeholder="Urgence" />
+    <div class="min-w-0 lg:col-span-2">
+      <BaseSelect
+        v-model="form.status"
+        :options="statusOptions"
+        placeholder="Statut"
+        :disabled="loading"
+      />
+    </div>
 
-    <BaseSelect v-model="form.paye" :options="paiementOptions" placeholder="Paiement" />
+    <div class="min-w-0 lg:col-span-3">
+      <BaseSelect
+        v-model="form.patientType"
+        :options="patientTypeOptions"
+        placeholder="Type patient"
+        :disabled="loading"
+      />
+    </div>
 
-    <div class="flex gap-2">
-      <BaseButton type="submit" :loading="loading"> Rechercher </BaseButton>
+    <div class="flex min-w-0 flex-col gap-2 sm:flex-row lg:col-span-12">
+      <BaseButton
+        type="submit"
+        class="w-full justify-center sm:w-auto"
+        :loading="loading"
+        loading-text="Recherche..."
+      >
+        Rechercher
+      </BaseButton>
 
-      <BaseButton type="button" variant="secondary" @click="reset"> Réinitialiser </BaseButton>
+      <BaseButton
+        type="button"
+        variant="secondary"
+        class="w-full justify-center sm:w-auto"
+        :disabled="loading"
+        @click="reset"
+      >
+        Réinitialiser
+      </BaseButton>
     </div>
   </form>
 </template>

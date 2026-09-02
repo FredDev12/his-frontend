@@ -1,15 +1,12 @@
 <script setup>
 import TriagePriorityBadge from '@/modules/triage/components/TriagePriorityBadge.vue'
+import { formatTriageDateTime } from '@/modules/triage/workflow/triage-create.workflow'
+import { patientDisplayName } from '@/shared/utils/patient'
 
-defineProps({
-  triage: {
-    type: Object,
-    required: true,
-  },
-})
+defineProps({ triage: { type: Object, required: true } })
 
 function dash(value) {
-  return value || '—'
+  return value === null || value === undefined || value === '' ? '—' : value
 }
 </script>
 
@@ -19,19 +16,17 @@ function dash(value) {
       <div>
         <div class="flex flex-wrap items-center gap-3">
           <h2 class="text-xl font-semibold text-slate-950">
-            {{ dash(triage.nom) }} {{ dash(triage.postnom) }} {{ dash(triage.prenom) }}
+            {{ patientDisplayName(triage, triage.numero_patient) }}
           </h2>
-
           <TriagePriorityBadge :priorite="triage.priorite" />
         </div>
-
         <p class="mt-2 text-sm text-slate-500">
-          Patient N° {{ dash(triage.numero_patient) }} · Fiche {{ dash(triage.numero_fiche) }}
+          Patient {{ dash(triage.numero_patient) }} · Épisode {{ dash(triage.numero_fiche) }} · Triage {{ dash(triage.triage_code) }}
         </p>
       </div>
 
       <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        Créé le : {{ dash(triage.created_at) }}
+        Validé le {{ formatTriageDateTime(triage.created_at) }}
       </div>
     </div>
 
@@ -40,19 +35,14 @@ function dash(value) {
         <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Température</dt>
         <dd class="mt-1 text-sm font-semibold text-slate-900">{{ dash(triage.temperature) }} °C</dd>
       </div>
-
       <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Tension</dt>
-        <dd class="mt-1 text-sm font-semibold text-slate-900">
-          {{ dash(triage.tension_arterielle) }}
-        </dd>
+        <dd class="mt-1 text-sm font-semibold text-slate-900">{{ dash(triage.tension_arterielle) }}</dd>
       </div>
-
       <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">SpO2</dt>
+        <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">SpO₂</dt>
         <dd class="mt-1 text-sm font-semibold text-slate-900">{{ dash(triage.spo2) }} %</dd>
       </div>
-
       <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Service</dt>
         <dd class="mt-1 text-sm font-semibold text-slate-900">{{ dash(triage.service_entree) }}</dd>

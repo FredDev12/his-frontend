@@ -5,131 +5,88 @@ import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import BaseCard from '@/shared/ui/base/BaseCard.vue'
 import BaseInput from '@/shared/ui/base/BaseInput.vue'
 import BaseSelect from '@/shared/ui/base/BaseSelect.vue'
+import BaseTextarea from '@/shared/ui/base/BaseTextarea.vue'
+
+import {
+  TRIAGE_ORIENTATION_OPTIONS,
+  TRIAGE_PRIORITY_OPTIONS,
+  TRIAGE_TYPE_OPTIONS,
+  buildTriageCreatePayload,
+  findVitalEmergencyService,
+  isEmergencyTriagePriority,
+  isVitalTriagePriority,
+  triagePatientFullName,
+} from '@/modules/triage/workflow/triage-create.workflow'
 
 const props = defineProps({
-  initialValue: {
-    type: Object,
-    default: null,
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-  prefillContext: {
-    type: Object,
-    default: null,
-  },
-  submitLabel: {
-    type: String,
-    default: 'Créer triage',
-  },
+  queueItem: { type: Object, required: true },
+  services: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['submit', 'cancel'])
 
 const form = reactive({
-  numero_patient: '',
-  numero_fiche: '',
-  nom: '',
-  postnom: '',
-  prenom: '',
-  sexe: '',
-  age: '',
+  motifInitial: '',
+  typePassage: '',
+  priority: '',
 
-  temperature: '',
-  tension_arterielle: '',
-  frequence_cardiaque: '',
-  frequence_respiratoire: '',
-  spO2: '',
-  poids: '',
-  taille: '',
+  temperatureCelsius: '',
+  bloodPressureSystolic: '',
+  bloodPressureDiastolic: '',
+  heartRate: '',
+  respiratoryRate: '',
+  oxygenSaturation: '',
+  weightKg: '',
+  heightCm: '',
+  glucoseMgDl: '',
+  painScore: '',
 
-  service_entree: '',
-  type_passage: 'NEW',
-  priorite: 'ROUTINE',
+  firstAidPerformed: false,
+  firstAidNotes: '',
+
+  requestedServiceId: '',
+  orientationTargetModule: '',
+  appointmentDateTime: '',
+  vitalEmergencyConfirmed: false,
 })
 
 const errors = reactive({})
-
-const sexeOptions = [
-  { label: 'Masculin', value: 'M' },
-  { label: 'Féminin', value: 'F' },
-]
-
-const serviceOptions = [
-  { label: 'Médecine interne', value: 'MÉDECINE INTERNE' },
-  { label: 'Pédiatrie', value: 'PÉDIATRIE' },
-  { label: 'Gynéco-obstétrique', value: 'GYNÉCO-OBSTÉTRIQUE' },
-  { label: 'Chirurgie', value: 'CHIRURGIE' },
-  { label: 'Laboratoire', value: 'LABORATOIRE' },
-  { label: 'Imagerie', value: 'IMAGERIE' },
-]
-
-const typePassageOptions = [
-  { label: 'Nouveau', value: 'NEW' },
-  { label: 'Contrôle', value: 'CONTROLE' },
-  { label: 'Référence', value: 'REFERENCE' },
-  { label: 'Urgence', value: 'URGENCE' },
-]
-
-const prioriteOptions = [
-  { label: 'Routine', value: 'ROUTINE' },
-  { label: 'Urgent', value: 'URGENT' },
-]
-
-const imc = computed(() => {
-  const poids = Number(form.poids)
-  const tailleCm = Number(form.taille)
-
-  if (!poids || !tailleCm) return ''
-
-  const tailleM = tailleCm / 100
-  return Number((poids / (tailleM * tailleM)).toFixed(1))
-})
-
-function toApiTypePassage(value) {
-  const map = {
-    NOUVEAU: 'NEW',
-    NEW: 'NEW',
-
-    CONTROLE: 'CONTROLE',
-    CONTRÔLE: 'CONTROLE',
-
-    REFERENCE: 'REFERENCE',
-    RÉFÉRENCE: 'REFERENCE',
-
-    URGENCE: 'URGENCE',
-  }
-
-  return map[String(value || '').toUpperCase()] || 'NEW'
-}
+const patientName = computed(() => triagePatientFullName(props.queueItem))
+const serviceOptions = computed(() =>
+  props.services.map((service) => ({
+    label: service.label || service.name,
+    value: String(service.value || service.id),
+  })),
+)
+const emergency = computed(() => isEmergencyTriagePriority(form.priority))
+const vitalEmergency = computed(() =>
+  isVitalTriagePriority(form.priority),
+)
+const vitalEmergencyService = computed(() =>
+  findVitalEmergencyService(props.services),
+)
+const vitalEmergencyConfigured = computed(
+  () => Boolean(vitalEmergencyService.value),
+)
 
 watch(
-  () => props.initialValue,
-  (value) => {
-    if (!value) return
+  [() => form.priority, () => props.services],
+  () => {
+    if (!vitalEmergency.value) return
 
-    form.numero_patient = value.numero_patient || ''
-    form.numero_fiche = value.numero_fiche || ''
-    form.nom = value.nom || ''
-    form.postnom = value.postnom || ''
-    form.prenom = value.prenom || ''
-    form.sexe = value.sexe || ''
-    form.age = value.age || ''
+    form.typePassage = 'URGENCE'
+    form.orientationTargetModule = 'CONSULTATION'
+    form.appointmentDateTime = ''
 
-    form.temperature = value.temperature || ''
-    form.tension_arterielle = value.tension_arterielle || ''
-    form.frequence_cardiaque = value.frequence_cardiaque || ''
-    form.frequence_respiratoire = value.frequence_respiratoire || ''
-    form.spO2 = value.spO2 || ''
-    form.poids = value.poids || ''
-    form.taille = value.taille || ''
-
-    form.service_entree = value.service_entree || ''
-    form.type_passage = toApiTypePassage(value.type_passage || 'NEW')
-    form.priorite = value.priorite || 'ROUTINE'
+    if (vitalEmergencyService.value) {
+      form.requestedServiceId = String(
+        vitalEmergencyService.value.id ||
+          vitalEmergencyService.value.value,
+      )
+    }
   },
-  { immediate: true },
+  { deep: true },
 )
 
 function clearErrors() {
@@ -138,161 +95,271 @@ function clearErrors() {
   })
 }
 
+function inRange(value, min, max) {
+  const number = Number(value)
+  return Number.isFinite(number) && number >= min && number <= max
+}
+
 function validate() {
   clearErrors()
 
-  if (!form.numero_patient) errors.numero_patient = 'Numéro patient obligatoire.'
-  if (!form.numero_fiche) errors.numero_fiche = 'Numéro fiche obligatoire.'
-  if (!form.nom) errors.nom = 'Nom obligatoire.'
-  if (!form.prenom) errors.prenom = 'Prénom obligatoire.'
-  if (!form.sexe) errors.sexe = 'Sexe obligatoire.'
-  if (!form.temperature) errors.temperature = 'Température obligatoire.'
-  if (!form.tension_arterielle) errors.tension_arterielle = 'Tension artérielle obligatoire.'
-  if (!form.frequence_cardiaque) errors.frequence_cardiaque = 'Fréquence cardiaque obligatoire.'
-  if (!form.frequence_respiratoire)
-    errors.frequence_respiratoire = 'Fréquence respiratoire obligatoire.'
-  if (!form.spO2) errors.spO2 = 'spO2 obligatoire.'
-  if (!form.service_entree) errors.service_entree = 'Service d’entrée obligatoire.'
-  if (!form.type_passage) errors.type_passage = 'Type de passage obligatoire.'
-  if (!form.priorite) errors.priorite = 'Priorité obligatoire.'
+  if (form.motifInitial.trim().length < 3) {
+    errors.motifInitial = 'Le motif initial doit contenir au moins 3 caractères.'
+  }
+  if (!form.typePassage) errors.typePassage = 'Choisissez le type de passage.'
+  if (!form.priority) errors.priority = 'Choisissez la priorité clinique.'
+
+  if (!inRange(form.temperatureCelsius, 25, 45)) {
+    errors.temperatureCelsius = 'Valeur attendue entre 25 et 45 °C.'
+  }
+  if (form.bloodPressureSystolic !== '' && !inRange(form.bloodPressureSystolic, 40, 300)) {
+    errors.bloodPressureSystolic = 'Valeur attendue entre 40 et 300.'
+  }
+  if (form.bloodPressureDiastolic !== '' && !inRange(form.bloodPressureDiastolic, 20, 200)) {
+    errors.bloodPressureDiastolic = 'Valeur attendue entre 20 et 200.'
+  }
+  if (!inRange(form.heartRate, 20, 250)) {
+    errors.heartRate = 'Valeur attendue entre 20 et 250 battements/min.'
+  }
+  if (!inRange(form.respiratoryRate, 5, 80)) {
+    errors.respiratoryRate = 'Valeur attendue entre 5 et 80 respirations/min.'
+  }
+  if (!inRange(form.oxygenSaturation, 1, 100)) {
+    errors.oxygenSaturation = 'Valeur attendue entre 1 et 100 %.'
+  }
+  if (form.weightKg !== '' && !inRange(form.weightKg, 0, 500)) errors.weightKg = 'Poids invalide.'
+  if (form.heightCm !== '' && !inRange(form.heightCm, 0, 260)) errors.heightCm = 'Taille invalide.'
+  if (form.glucoseMgDl !== '' && !inRange(form.glucoseMgDl, 0, 1000)) errors.glucoseMgDl = 'Glycémie invalide.'
+  if (form.painScore !== '' && !inRange(form.painScore, 0, 10)) {
+    errors.painScore = 'Le score de douleur doit être compris entre 0 et 10.'
+  }
+  if (form.firstAidPerformed && form.firstAidNotes.trim().length < 2) {
+    errors.firstAidNotes = 'Décrivez les premiers soins réalisés.'
+  }
+  if (!form.requestedServiceId) {
+    errors.requestedServiceId = 'Choisissez un service clinique.'
+  }
+  if (!form.orientationTargetModule) {
+    errors.orientationTargetModule = 'Choisissez la destination du patient.'
+  }
+  if (form.orientationTargetModule === 'RDV_CONSULTATION' && !form.appointmentDateTime) {
+    errors.appointmentDateTime = 'La date du rendez-vous est obligatoire.'
+  }
+
+  if (vitalEmergency.value && !vitalEmergencyConfigured.value) {
+    errors.requestedServiceId =
+      'Le service Urgences doit être actif et autorisé au triage.'
+  }
 
   return Object.values(errors).every((value) => !value)
 }
 
-function buildPayload() {
-  return {
-    //numero_fiche: form.numero_fiche,
-
-    signes_vitaux: {
-      temperature: Number(form.temperature),
-      tension_arterielle: form.tension_arterielle,
-      frequence_cardiaque: Number(form.frequence_cardiaque),
-      frequence_respiratoire: Number(form.frequence_respiratoire),
-      spO2: Number(form.spO2),
-      poids: Number(form.poids) || 0,
-      taille: Number(form.taille) || 0,
-      imc: Number(imc.value) || 0,
-    },
-
-    service_entree: form.service_entree,
-    type_passage: toApiTypePassage(form.type_passage),
-    priorite: form.priorite,
-  }
-}
-
 function submit() {
   if (!validate()) return
-  emit('submit', buildPayload())
+  emit('submit', buildTriageCreatePayload(form, props.queueItem))
 }
 </script>
 
 <template>
   <form class="space-y-6" @submit.prevent="submit">
-    <BaseCard title="Patient" subtitle="Informations d’identification du patient trié.">
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <BaseInput
-          v-model="form.numero_patient"
-          label="Numéro patient"
-          required
-          :error="errors.numero_patient"
-        />
-        <BaseInput
-          v-model="form.numero_fiche"
-          label="Numéro fiche"
-          required
-          :error="errors.numero_fiche"
-        />
-        <BaseSelect
-          v-model="form.sexe"
-          label="Sexe"
-          :options="sexeOptions"
-          required
-          :error="errors.sexe"
-        />
-
-        <BaseInput v-model="form.nom" label="Nom" required :error="errors.nom" />
-        <BaseInput v-model="form.postnom" label="Postnom" />
-        <BaseInput v-model="form.prenom" label="Prénom" required :error="errors.prenom" />
-        <BaseInput v-model="form.age" label="Âge" type="number" />
-      </div>
+    <BaseCard
+      title="Contexte patient"
+      subtitle="Identité issue de la Réception. Elle n’est pas modifiable au Triage."
+    >
+      <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-xl bg-slate-50 p-4">
+          <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Patient</dt>
+          <dd class="mt-1 font-semibold text-slate-950">{{ patientName || 'Patient' }}</dd>
+        </div>
+        <div class="rounded-xl bg-slate-50 p-4">
+          <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Identifiant</dt>
+          <dd class="mt-1 font-semibold text-slate-950">{{ queueItem.patient.patientCode }}</dd>
+        </div>
+        <div class="rounded-xl bg-slate-50 p-4">
+          <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Épisode</dt>
+          <dd class="mt-1 font-semibold text-slate-950">{{ queueItem.episode.episodeCode }}</dd>
+        </div>
+        <div class="rounded-xl bg-slate-50 p-4">
+          <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Réception</dt>
+          <dd class="mt-1 font-semibold text-slate-950">{{ queueItem.reception.receptionCode }}</dd>
+        </div>
+      </dl>
     </BaseCard>
 
-    <BaseCard title="Signes vitaux" subtitle="Mesures cliniques relevées au triage.">
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <BaseInput
-          v-model="form.temperature"
-          label="Température °C"
-          type="number"
+    <BaseCard title="Évaluation initiale" subtitle="Chaque choix doit refléter l’évaluation réellement effectuée.">
+      <div class="grid gap-4 lg:grid-cols-2">
+        <BaseTextarea
+          v-model="form.motifInitial"
+          class="lg:col-span-2"
+          label="Motif initial"
+          placeholder="Décrivez les symptômes, leur durée et la raison de la venue"
+          :rows="3"
           required
-          :error="errors.temperature"
+          :error="errors.motifInitial"
         />
-        <BaseInput
-          v-model="form.tension_arterielle"
-          label="Tension artérielle"
-          placeholder="120/80"
-          required
-          :error="errors.tension_arterielle"
-        />
-        <BaseInput
-          v-model="form.frequence_cardiaque"
-          label="Fréquence cardiaque"
-          type="number"
-          required
-          :error="errors.frequence_cardiaque"
-        />
-        <BaseInput
-          v-model="form.frequence_respiratoire"
-          label="Fréquence respiratoire"
-          type="number"
-          required
-          :error="errors.frequence_respiratoire"
-        />
-        <BaseInput v-model="form.spO2" label="spO2 %" type="number" required :error="errors.spO2" />
-        <BaseInput v-model="form.poids" label="Poids kg" type="number" />
-        <BaseInput v-model="form.taille" label="Taille cm" type="number" />
 
-        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <p class="text-xs font-medium uppercase tracking-wide text-slate-400">IMC calculé</p>
-          <p class="mt-1 text-lg font-semibold text-slate-950">{{ imc || '—' }}</p>
+        <div>
+          <BaseSelect
+            v-model="form.typePassage"
+            label="Type de passage"
+            placeholder="Sélectionner le type de passage"
+            :options="TRIAGE_TYPE_OPTIONS"
+            required
+            :disabled="vitalEmergency"
+            :error="errors.typePassage"
+          />
+          <p class="mt-2 text-xs leading-5 text-slate-500">Indique comment le patient est arrivé dans le parcours de soins.</p>
+        </div>
+
+        <div>
+          <BaseSelect
+            v-model="form.priority"
+            label="Priorité clinique"
+            placeholder="Sélectionner la priorité clinique"
+            :options="TRIAGE_PRIORITY_OPTIONS"
+            required
+            :error="errors.priority"
+          />
+          <p class="mt-2 text-xs leading-5 text-slate-500">Choisissez selon l’état actuel du patient, jamais selon l’ordre d’arrivée.</p>
         </div>
       </div>
     </BaseCard>
 
-    <BaseCard title="Orientation" subtitle="Priorité clinique et service d’entrée.">
-      <div class="grid gap-4 md:grid-cols-3">
-        <BaseSelect
-          v-model="form.service_entree"
-          label="Service d’entrée"
-          :options="serviceOptions"
+    <BaseCard title="Constantes vitales" subtitle="Mesures relevées au moment du triage.">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <BaseInput v-model="form.temperatureCelsius" label="Température °C" type="number" required :error="errors.temperatureCelsius" />
+        <BaseInput v-model="form.bloodPressureSystolic" label="Tension systolique" type="number" :error="errors.bloodPressureSystolic" />
+        <BaseInput v-model="form.bloodPressureDiastolic" label="Tension diastolique" type="number" :error="errors.bloodPressureDiastolic" />
+        <div>
+          <BaseInput v-model="form.heartRate" label="Fréquence cardiaque" type="number" required :error="errors.heartRate" />
+          <p class="mt-2 text-xs text-slate-500">Nombre de battements observés pendant une minute.</p>
+        </div>
+        <div>
+          <BaseInput v-model="form.respiratoryRate" label="Fréquence respiratoire" type="number" required :error="errors.respiratoryRate" />
+          <p class="mt-2 text-xs text-slate-500">Nombre de respirations observées pendant une minute.</p>
+        </div>
+        <div>
+          <BaseInput v-model="form.oxygenSaturation" label="Saturation SpO₂ %" type="number" required :error="errors.oxygenSaturation" />
+          <p class="mt-2 text-xs text-slate-500">Pourcentage d’oxygène mesuré avec l’oxymètre.</p>
+        </div>
+      </div>
+
+      <details class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <summary class="cursor-pointer font-semibold text-slate-800">Mesures complémentaires</summary>
+        <p class="mt-2 text-sm text-slate-500">À renseigner lorsqu’elles sont disponibles ou cliniquement utiles.</p>
+        <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <BaseInput v-model="form.weightKg" label="Poids kg" type="number" :error="errors.weightKg" />
+          <BaseInput v-model="form.heightCm" label="Taille cm" type="number" :error="errors.heightCm" />
+          <BaseInput v-model="form.glucoseMgDl" label="Glycémie mg/dL" type="number" :error="errors.glucoseMgDl" />
+          <BaseInput v-model="form.painScore" label="Douleur /10" type="number" :error="errors.painScore" />
+        </div>
+      </details>
+    </BaseCard>
+
+    <BaseCard title="Premiers soins" subtitle="Toute intervention réalisée avant l’orientation doit être documentée.">
+      <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-4">
+        <input v-model="form.firstAidPerformed" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300" />
+        <span>
+          <span class="block font-semibold text-slate-900">Premiers soins réalisés</span>
+          <span class="mt-1 block text-sm text-slate-500">Activez uniquement lorsqu’une intervention a réellement été effectuée.</span>
+        </span>
+      </label>
+      <BaseTextarea
+        v-if="form.firstAidPerformed"
+        v-model="form.firstAidNotes"
+        class="mt-4"
+        label="Description des premiers soins"
+        placeholder="Décrivez les gestes, produits ou dispositifs utilisés"
+        :rows="3"
+        required
+        :error="errors.firstAidNotes"
+      />
+    </BaseCard>
+
+    <BaseCard title="Orientation" subtitle="Le backend n’accepte que les services cliniques autorisés.">
+      <div v-if="services.length === 0" class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        Aucun service clinique n’est actuellement autorisé à recevoir un patient depuis le triage. Contactez l’administrateur.
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <BaseSelect
+            v-model="form.requestedServiceId"
+            label="Service clinique demandé"
+            placeholder="Sélectionner un service clinique"
+            :options="serviceOptions"
+            required
+            :disabled="services.length === 0 || vitalEmergency"
+            :error="errors.requestedServiceId"
+          />
+          <p class="mt-2 text-xs text-slate-500">Les services administratifs, financiers et techniques ne sont pas proposés.</p>
+        </div>
+
+        <div>
+          <BaseSelect
+            v-model="form.orientationTargetModule"
+            label="Destination"
+            placeholder="Sélectionner la destination"
+            :options="TRIAGE_ORIENTATION_OPTIONS"
+            required
+            :disabled="vitalEmergency"
+            :error="errors.orientationTargetModule"
+          />
+          <p class="mt-2 text-xs text-slate-500">Choisissez une consultation immédiate ou un rendez-vous programmé.</p>
+        </div>
+
+        <BaseInput
+          v-if="form.orientationTargetModule === 'RDV_CONSULTATION'"
+          v-model="form.appointmentDateTime"
+          class="md:col-span-2"
+          label="Date et heure du rendez-vous"
+          type="datetime-local"
           required
-          :error="errors.service_entree"
-        />
-        <BaseSelect
-          v-model="form.type_passage"
-          label="Type de passage"
-          :options="typePassageOptions"
-          required
-          :error="errors.type_passage"
-        />
-        <BaseSelect
-          v-model="form.priorite"
-          label="Priorité"
-          :options="prioriteOptions"
-          required
-          :error="errors.priorite"
+          :error="errors.appointmentDateTime"
         />
       </div>
     </BaseCard>
 
-    <div class="flex justify-end gap-3">
-      <BaseButton type="button" variant="secondary" @click="$emit('cancel')"> Annuler </BaseButton>
+    <div
+      v-if="vitalEmergency"
+      class="rounded-2xl border-2 border-rose-500 bg-rose-50 p-5 text-rose-900"
+    >
+      <p class="font-bold">Urgence vitale — prise en charge immédiate</p>
+      <p class="mt-1 text-sm">
+        Le type de passage, le service Urgences et la consultation
+        immédiate sont imposés. La confirmation sera rapide et auditée.
+      </p>
+      <p
+        v-if="!vitalEmergencyConfigured"
+        class="mt-3 text-sm font-semibold"
+      >
+        Le service Urgences n’est pas correctement configuré.
+      </p>
+    </div>
 
+    <div
+      v-else-if="emergency"
+      class="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-sm font-medium text-rose-800"
+    >
+      Priorité urgente sélectionnée. Vérifiez immédiatement les constantes et l’orientation.
+    </div>
+
+    <div class="flex flex-col-reverse justify-end gap-3 sm:flex-row">
+      <BaseButton type="button" variant="secondary" @click="$emit('cancel')">Retour à la file</BaseButton>
       <BaseButton
         type="submit"
-        :variant="form.priorite === 'URGENT' ? 'emergency' : 'primary'"
+        :variant="emergency ? 'emergency' : 'success'"
         :loading="loading"
+        :disabled="
+          services.length === 0 ||
+          (vitalEmergency && !vitalEmergencyConfigured)
+        "
       >
-        {{ submitLabel }}
+        {{
+          vitalEmergency
+            ? 'Activer l’urgence vitale'
+            : 'Valider le triage'
+        }}
       </BaseButton>
     </div>
   </form>

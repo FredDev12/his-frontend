@@ -1,148 +1,170 @@
-﻿import { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
+
 import { triageService } from '@/modules/triage/services/triage.service'
+import {
+  normalizeTriageQueueItem,
+  normalizeTriageQueueResponse,
+  normalizeTriageServices,
+} from '@/modules/triage/workflow/triage-create.workflow'
+import {
+  createEmptyTriageDashboard,
+  normalizeTriageDashboard,
+} from '@/modules/triage/workflow/triage-dashboard.workflow'
+import {
+  normalizeTriageReevaluation,
+  normalizeTriageReevaluationList,
+} from '@/modules/triage/workflow/triage-reevaluation.workflow'
+
 import { useToastStore } from '@/shared/stores/toast.store'
 import {
-  statusBroadcastService,
-  HIS_STATUS_MODULES,
   HIS_STATUSES,
+  HIS_STATUS_MODULES,
+  statusBroadcastService,
 } from '@/shared/services/status-broadcast.service'
 import { patientFullName } from '@/shared/utils/patient'
 
-function pick(obj, keys, fallback = '') {
+function pick(object, keys, fallback = '') {
   for (const key of keys) {
-    if (obj && obj[key] !== undefined && obj[key] !== null && obj[key] !== '') {
-      return obj[key]
+    if (
+      object &&
+      object[key] !== undefined &&
+      object[key] !== null &&
+      object[key] !== ''
+    ) {
+      return object[key]
     }
   }
 
   return fallback
 }
 
-function normalizeTriage(item) {
+export function normalizeTriage(item) {
   if (!item) return null
 
   const raw = item
-  const patient =
-    raw.patient ||
-    raw.identification_patient ||
-    raw.identificationPatient ||
-    raw.reception?.identification_patient ||
-    {}
-  const signes = raw.signes_vitaux || raw.signesVitaux || raw.vitals || {}
+  const patient = raw.patient || {}
+  const episode = raw.episode || {}
+  const service = raw.requestedService || {}
+
+  const systolic = pick(raw, ['bloodPressureSystolic'], null)
+  const diastolic = pick(raw, ['bloodPressureDiastolic'], null)
 
   return {
     raw,
+    id: String(pick(raw, ['id'], '')),
+    triage_code: pick(raw, ['triageCode'], ''),
 
-    id: pick(raw, ['id', 'identifiant', 'triage_id']),
+    patient_id: String(pick(patient, ['id'], '')),
+    numero_patient: pick(patient, ['patientCode'], '—'),
+    numero_fiche: pick(episode, ['episodeCode'], '—'),
 
-    reception_id: pick(raw, ['reception_id', 'receptionId'], pick(raw.reception, ['id'])),
-    patient_id: pick(raw, ['patient_id', 'patientId'], pick(patient, ['id'])),
+    nom: pick(patient, ['lastName'], ''),
+    postnom: pick(patient, ['middleName'], ''),
+    prenom: pick(patient, ['firstName'], ''),
 
-    numero_patient: pick(
-      patient,
-      ['numero_patient', 'numéro_patient', 'numeroPatient'],
-      pick(raw, ['numero_patient', 'numeroPatient'], '—'),
+    temperature: pick(raw, ['temperatureCelsius'], ''),
+    tension_arterielle:
+      systolic !== null && diastolic !== null
+        ? `${systolic}/${diastolic}`
+        : '—',
+    frequence_cardiaque: pick(raw, ['heartRate'], ''),
+    frequence_respiratoire: pick(raw, ['respiratoryRate'], ''),
+    spo2: pick(raw, ['oxygenSaturation'], ''),
+    poids: pick(raw, ['weightKg'], ''),
+    taille: pick(raw, ['heightCm'], ''),
+    glycemie: pick(raw, ['glucoseMgDl'], ''),
+    douleur: pick(raw, ['painScore'], ''),
+
+    first_aid_performed: Boolean(pick(raw, ['firstAidPerformed'], false)),
+    first_aid_notes: pick(raw, ['firstAidNotes'], ''),
+    clinical_notes: pick(raw, ['clinicalNotes'], ''),
+
+    motif_initial: pick(raw, ['motifInitial'], ''),
+    service_entree: pick(service, ['name'], 'Non orienté'),
+    type_passage: pick(raw, ['typePassage'], ''),
+    priorite: pick(raw, ['priority'], ''),
+    statut: pick(raw, ['status'], ''),
+    orientation: raw.orientation || null,
+    episode_status: pick(episode, ['status'], ''),
+    requested_service_code: pick(service, ['code'], ''),
+    orientation_target_module: pick(raw.orientation, ['targetModule'], ''),
+    appointment_required: Boolean(
+      pick(raw.orientation, ['appointmentRequired'], false),
     ),
-    numero_fiche: pick(
-      raw,
-      ['numero_fiche', 'numeroFiche'],
-      pick(raw.reception, ['numero_fiche', 'numeroFiche'], '—'),
+    appointment_date_time: pick(
+      raw.orientation,
+      ['appointmentDateTime'],
+      '',
     ),
 
-    nom: pick(patient, ['nom'], pick(raw, ['nom'])),
-    postnom: pick(patient, ['postnom'], pick(raw, ['postnom'])),
-    prenom: pick(patient, ['prenom', 'prénom'], pick(raw, ['prenom', 'prénom'])),
-    sexe: pick(patient, ['sexe'], pick(raw, ['sexe'], '—')),
-    age: pick(patient, ['age', 'âge'], pick(raw, ['age', 'âge'], '')),
-
-    temperature: pick(
-      signes,
-      ['temperature', 'température'],
-      pick(raw, ['temperature', 'température'], ''),
-    ),
-    tension_arterielle: pick(
-      signes,
-      ['tension_arterielle', 'tension_artérielle'],
-      pick(raw, ['tension_arterielle', 'tension_artérielle'], ''),
-    ),
-    frequence_cardiaque: pick(
-      signes,
-      ['frequence_cardiaque', 'fréquence_cardiaque'],
-      pick(raw, ['frequence_cardiaque'], ''),
-    ),
-    frequence_respiratoire: pick(
-      signes,
-      ['frequence_respiratoire', 'fréquence_respiratoire'],
-      pick(raw, ['frequence_respiratoire'], ''),
-    ),
-    spo2: pick(signes, ['spO2', 'spo2', 'saturation'], pick(raw, ['spO2', 'spo2'], '')),
-    poids: pick(signes, ['poids'], pick(raw, ['poids'], '')),
-    taille: pick(signes, ['taille'], pick(raw, ['taille'], '')),
-    imc: pick(signes, ['imc'], pick(raw, ['imc'], '')),
-
-    service_entree: pick(raw, ['service_entree', 'serviceEntree', 'service'], 'Non orienté'),
-    type_passage: pick(raw, ['type_passage', 'typePassage'], 'NOUVEAU'),
-    priorite: pick(raw, ['priorite', 'priorité', 'priority'], 'ROUTINE'),
-
-    statut: pick(raw, ['statut', 'status'], 'active'),
-    created_at: pick(raw, ['created_at', 'createdAt', 'date_creation'], ''),
+    created_by: raw.createdByUser || null,
+    updated_by: raw.updatedByUser || null,
+    created_at: pick(raw, ['createdAt'], ''),
   }
 }
 
-function normalizeListResponse(payload) {
-  const rawItems =
-    payload?.data ||
-    payload?.données ||
-    payload?.triages ||
-    payload?.items ||
-    payload?.results ||
-    payload?.resultats ||
-    []
+function normalizeTriageList(payload) {
+  const data = payload?.data || payload || {}
+  const items = Array.isArray(data.items)
+    ? data.items.map(normalizeTriage).filter(Boolean)
+    : []
 
-  const items = Array.isArray(rawItems) ? rawItems.map(normalizeTriage).filter(Boolean) : []
-
-  const pagination = payload?.pagination || payload?.meta || {}
-
-  const page = Number(payload?.page || pagination.page || 1)
-  const limite = Number(
-    payload?.limit || payload?.limite || pagination.limit || pagination.limite || 10,
-  )
-  const total = Number(payload?.total || pagination.total || items.length || 0)
-  const totalPages = Number(
-    payload?.pages ||
-      payload?.totalPages ||
-      pagination.pages ||
-      pagination.totalPages ||
-      Math.ceil(total / limite) ||
-      1,
-  )
+  const page = Number(data.page || 1)
+  const limit = Number(data.limit || 10)
+  const total = Number(data.count || items.length || 0)
 
   return {
     items,
-    total,
     page,
-    limite,
-    hasNext: page < totalPages,
+    limit,
+    total,
+    hasNext: page * limit < total,
     hasPrev: page > 1,
   }
 }
 
-function normalizeSingleResponse(payload) {
-  const triage = payload?.triage || payload?.data || payload?.données || payload?.result || payload
-
-  return normalizeTriage(triage)
+function normalizeSingleTriage(payload) {
+  const data = payload?.data || payload || {}
+  return normalizeTriage(data.item || data.triage || data)
 }
 
 export const useTriageStore = defineStore('triage', {
   state: () => ({
+    dashboard: createEmptyTriageDashboard(),
+    dashboardLoading: false,
+    dashboardError: '',
+
+    queue: [],
+    selectedQueueItem: null,
+    availableServices: [],
+
+    queueLoading: false,
+    queueItemLoading: false,
+    servicesLoading: false,
+    queueError: '',
+
+    queueFilters: {
+      q: '',
+    },
+
+    queuePagination: {
+      page: 1,
+      limit: 20,
+      total: 0,
+      hasNext: false,
+      hasPrev: false,
+    },
+
     triages: [],
     selectedTriage: null,
 
+    reevaluations: [],
+    reevaluationLoading: false,
+    reevaluationSaving: false,
+    reevaluationError: '',
+
     loading: false,
     saving: false,
-    deleting: false,
-    searching: false,
-
     error: '',
 
     pagination: {
@@ -152,48 +174,142 @@ export const useTriageStore = defineStore('triage', {
       hasNext: false,
       hasPrev: false,
     },
-
-    filters: {
-      q: '',
-      service: '',
-      priorite: '',
-      type_passage: '',
-    },
   }),
 
   getters: {
-    triageKpis: (state) => {
-      const items = state.triages || []
-
-      const isUrgent = (item) =>
-        ['URGENT', 'URGENCE', 'VITALE'].includes(String(item.priorite || '').toUpperCase())
-
-      const isHighPriority = (item) =>
-        ['ELEVE', 'ÉLEVÉ', 'HIGH', 'URGENT', 'URGENCE', 'VITALE'].includes(
-          String(item.priorite || '').toUpperCase()
-        )
-
-      const isOriented = (item) => {
-        const service = String(item.service_entree || '').toLowerCase()
-        return service && service !== 'non orienté' && service !== '—'
-      }
-
-      const isWaiting = (item) =>
-        ['active', 'en_attente', 'attente'].includes(String(item.statut || '').toLowerCase())
-
-      return {
-        total: state.pagination.total || items.length,
-        triagesToday: items.length,
-        urgences: items.filter(isUrgent).length,
-        prioriteElevee: items.filter(isHighPriority).length,
-        patientsOrientes: items.filter(isOriented).length,
-        patientsNonOrientes: items.filter((item) => !isOriented(item)).length,
-        enAttente: items.filter(isWaiting).length,
-      }
-    },
+    dashboardPriorityTotal: (state) =>
+      state.dashboard.today.priorities.priorityTotal,
   },
 
   actions: {
+    async fetchDashboard(params = {}) {
+      this.dashboardLoading = true
+      this.dashboardError = ''
+
+      try {
+        const payload = await triageService.getDashboard({
+          timezoneOffsetMinutes:
+            params.timezoneOffsetMinutes ??
+            new Date().getTimezoneOffset(),
+        })
+
+        const normalized = normalizeTriageDashboard(payload)
+
+        this.dashboard = {
+          ...normalized,
+          priorityTriages: normalized.priorityTriages
+            .map(normalizeTriage)
+            .filter(Boolean),
+          recentTriages: normalized.recentTriages
+            .map(normalizeTriage)
+            .filter(Boolean),
+          reassessment: {
+            ...normalized.reassessment,
+            items: normalized.reassessment.items
+              .map(normalizeTriage)
+              .filter(Boolean),
+          },
+        }
+
+        return this.dashboard
+      } catch (error) {
+        this.dashboardError =
+          error.message ||
+          error.response?.data?.message ||
+          'Impossible de charger le dashboard du triage.'
+        throw error
+      } finally {
+        this.dashboardLoading = false
+      }
+    },
+
+    async fetchQueue(params = {}) {
+      this.queueLoading = true
+      this.queueError = ''
+
+      try {
+        const q = params.q ?? this.queueFilters.q
+        const payload = await triageService.getQueue({
+          q,
+          page: params.page || this.queuePagination.page,
+          limit: params.limit || this.queuePagination.limit,
+        })
+
+        const normalized = normalizeTriageQueueResponse(payload)
+
+        this.queue = normalized.items
+        this.queueFilters.q = q || ''
+        this.queuePagination = {
+          page: normalized.page,
+          limit: normalized.limit,
+          total: normalized.count,
+          hasNext: normalized.hasNext,
+          hasPrev: normalized.hasPrev,
+        }
+
+        return normalized
+      } catch (error) {
+        this.queueError =
+          error.message ||
+          error.response?.data?.message ||
+          'Impossible de charger la file du triage.'
+        throw error
+      } finally {
+        this.queueLoading = false
+      }
+    },
+
+    async fetchQueueItem(episodeId) {
+      this.queueItemLoading = true
+      this.queueError = ''
+      this.selectedQueueItem = null
+
+      try {
+        const payload = await triageService.getQueueItem(episodeId)
+        const data = payload?.data || payload || {}
+        this.selectedQueueItem = normalizeTriageQueueItem(data.item || data)
+
+        return this.selectedQueueItem
+      } catch (error) {
+        this.queueError =
+          error.message ||
+          error.response?.data?.message ||
+          'Cet épisode n’est plus disponible dans la file du triage.'
+        throw error
+      } finally {
+        this.queueItemLoading = false
+      }
+    },
+
+    async fetchAvailableServices() {
+      this.servicesLoading = true
+
+      try {
+        const payload = await triageService.getAvailableServices()
+        this.availableServices = normalizeTriageServices(payload)
+        return this.availableServices
+      } finally {
+        this.servicesLoading = false
+      }
+    },
+
+    removeQueueItem(episodeId) {
+      this.queue = this.queue.filter(
+        (item) => String(item.episode.id) !== String(episodeId),
+      )
+      this.queuePagination.total = Math.max(
+        0,
+        this.queuePagination.total - 1,
+      )
+
+      if (
+        String(this.selectedQueueItem?.episode?.id || '') ===
+        String(episodeId)
+      ) {
+        this.selectedQueueItem = null
+      }
+    },
+
     async fetchTriages(params = {}) {
       this.loading = true
       this.error = ''
@@ -204,12 +320,11 @@ export const useTriageStore = defineStore('triage', {
           limit: params.limit || params.limite || this.pagination.limite,
         })
 
-        const normalized = normalizeListResponse(payload)
-
+        const normalized = normalizeTriageList(payload)
         this.triages = normalized.items
         this.pagination = {
           page: normalized.page,
-          limite: normalized.limite,
+          limite: normalized.limit,
           total: normalized.total,
           hasNext: normalized.hasNext,
           hasPrev: normalized.hasPrev,
@@ -218,73 +333,12 @@ export const useTriageStore = defineStore('triage', {
         return normalized
       } catch (error) {
         this.error =
+          error.message ||
           error.response?.data?.message ||
-          error.response?.data?.error ||
           'Impossible de charger les triages.'
         throw error
       } finally {
         this.loading = false
-      }
-    },
-
-    async searchTriages(filters = {}) {
-      this.searching = true
-      this.error = ''
-
-      this.filters = {
-        q: filters.q ?? '',
-        service: filters.service ?? '',
-        priorite: filters.priorite ?? '',
-        type_passage: filters.type_passage ?? '',
-      }
-
-      try {
-        await this.fetchTriages({ page: 1 })
-
-        const q = String(this.filters.q || '')
-          .toLowerCase()
-          .trim()
-
-        this.triages = this.triages.filter((item) => {
-          const fullName = [item.nom, item.postnom, item.prenom]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase()
-
-          const matchesQ =
-            !q ||
-            fullName.includes(q) ||
-            String(item.numero_patient || '')
-              .toLowerCase()
-              .includes(q) ||
-            String(item.numero_fiche || '')
-              .toLowerCase()
-              .includes(q)
-
-          const matchesService =
-            !this.filters.service || item.service_entree === this.filters.service
-          const matchesPriorite = !this.filters.priorite || item.priorite === this.filters.priorite
-          const matchesType =
-            !this.filters.type_passage || item.type_passage === this.filters.type_passage
-
-          return matchesQ && matchesService && matchesPriorite && matchesType
-        })
-
-        this.pagination = {
-          page: 1,
-          limite: this.triages.length || 10,
-          total: this.triages.length,
-          hasNext: false,
-          hasPrev: false,
-        }
-      } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Recherche triage impossible.'
-        throw error
-      } finally {
-        this.searching = false
       }
     },
 
@@ -295,15 +349,81 @@ export const useTriageStore = defineStore('triage', {
 
       try {
         const payload = await triageService.getById(id)
-        this.selectedTriage = normalizeSingleResponse(payload)
-
+        this.selectedTriage = normalizeSingleTriage(payload)
         return this.selectedTriage
       } catch (error) {
         this.error =
-          error.response?.data?.message || error.response?.data?.error || 'Triage introuvable.'
+          error.message ||
+          error.response?.data?.message ||
+          'Triage introuvable.'
         throw error
       } finally {
         this.loading = false
+      }
+    },
+
+    async fetchReevaluations(triageId) {
+      this.reevaluationLoading = true
+      this.reevaluationError = ''
+
+      try {
+        const payload = await triageService.getReevaluations(
+          triageId,
+        )
+
+        this.reevaluations =
+          normalizeTriageReevaluationList(payload)
+
+        return this.reevaluations
+      } catch (error) {
+        this.reevaluationError =
+          error.message ||
+          error.response?.data?.message ||
+          'Impossible de charger les réévaluations.'
+        throw error
+      } finally {
+        this.reevaluationLoading = false
+      }
+    },
+
+    async createReevaluation(triageId, payload) {
+      const toast = useToastStore()
+
+      this.reevaluationSaving = true
+      this.reevaluationError = ''
+
+      try {
+        const response =
+          await triageService.createReevaluation(
+            triageId,
+            payload,
+          )
+
+        const data = response?.data || response || {}
+        const created = normalizeTriageReevaluation(
+          data.item || data,
+        )
+
+        this.reevaluations.unshift(created)
+
+        toast.success(
+          created.emergencyEscalated
+            ? 'Urgence vitale activée et réévaluation enregistrée.'
+            : 'Réévaluation clinique enregistrée.',
+        )
+
+        return created
+      } catch (error) {
+        const message =
+          error.message ||
+          error.response?.data?.message ||
+          'Réévaluation impossible.'
+
+        this.reevaluationError = message
+        toast.error(message)
+        throw error
+      } finally {
+        this.reevaluationSaving = false
       }
     },
 
@@ -315,9 +435,9 @@ export const useTriageStore = defineStore('triage', {
 
       try {
         const response = await triageService.create(payload)
-        const created = normalizeSingleResponse(response)
+        const created = normalizeSingleTriage(response)
 
-        toast.success('Triage créé avec succès.')
+        toast.success('Triage validé et patient orienté.')
 
         await statusBroadcastService.broadcastSafe({
           module: HIS_STATUS_MODULES.TRIAGE,
@@ -328,142 +448,23 @@ export const useTriageStore = defineStore('triage', {
             numero_patient: created?.numero_patient,
             patient: patientFullName(created),
             action: 'TRIAGE_CREATED',
-            message: 'Triage créé',
+            message: 'Triage validé',
           },
         })
+
         return created
       } catch (error) {
         const message =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Création du triage impossible.'
-        this.error = message
-        toast.error(message)
-
-        throw error
-      } finally {
-        this.saving = false
-      }
-    },
-
-    async updateTriage(id, payload) {
-      const toast = useToastStore()
-
-      this.saving = true
-      this.error = ''
-
-      try {
-        const response = await triageService.update(id, payload)
-        const updated = normalizeSingleResponse(response)
-
-        if (updated) {
-          this.selectedTriage = updated
-        }
-
-        toast.success('Triage mis à jour avec succès.')
-
-        await statusBroadcastService.broadcastSafe({
-          module: HIS_STATUS_MODULES.TRIAGE,
-          id: updated?.id || id,
-          status: HIS_STATUSES.UPDATED,
-          details: {
-            numero_fiche: updated?.numero_fiche,
-            numero_patient: updated?.numero_patient,
-            patient: patientFullName(updated),
-            action: 'TRIAGE_UPDATED',
-            message: 'Triage mis à jour',
-          },
-        })
-        return updated
-      } catch (error) {
-        const message =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Mise à jour du triage impossible.'
-        this.error = message
-        toast.error(message)
-
-        throw error
-      } finally {
-        this.saving = false
-      }
-    },
-
-    async updateStatus(id, payload) {
-      const toast = useToastStore()
-
-      this.saving = true
-      this.error = ''
-
-      try {
-        const status =
-          payload?.status || payload?.statut || payload?.priorite || HIS_STATUSES.TRIAGE_URGENT
-
-        const response = await statusBroadcastService.broadcast({
-          module: HIS_STATUS_MODULES.TRIAGE,
-          id,
-          status,
-          details: {
-            ...payload?.details,
-            numero_fiche: payload?.numero_fiche || payload?.details?.numero_fiche,
-            numero_patient: payload?.numero_patient || payload?.details?.numero_patient,
-            action: payload?.action || 'TRIAGE_STATUS_BROADCAST',
-            message: payload?.message || 'Statut triage diffusé',
-          },
-        })
-
-        toast.success('Statut triage diffusé avec succès.')
-        return response
-      } catch (error) {
-        const message =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
           error.message ||
-          'Diffusion du statut impossible.'
+          error.response?.data?.message ||
+          'Validation du triage impossible.'
 
         this.error = message
         toast.error(message)
         throw error
       } finally {
         this.saving = false
-      }
-    },
-
-    async removeTriage(id) {
-      const toast = useToastStore()
-
-      this.deleting = true
-      this.error = ''
-
-      try {
-        await triageService.remove(id)
-
-        this.triages = this.triages.filter((item) => String(item.id) !== String(id))
-
-        toast.success('Triage supprimé avec succès.')
-        await statusBroadcastService.broadcastSafe({
-          module: HIS_STATUS_MODULES.TRIAGE,
-          id,
-          status: HIS_STATUSES.DELETED,
-          details: {
-            action: 'TRIAGE_DELETED',
-            message: 'Triage supprimé',
-          },
-        })
-      } catch (error) {
-        const message =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Suppression du triage impossible.'
-        this.error = message
-        toast.error(message)
-
-        throw error
-      } finally {
-        this.deleting = false
       }
     },
   },
 })
-
-

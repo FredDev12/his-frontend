@@ -28,20 +28,22 @@ const form = reactive({
 })
 
 const typeOptions = [
-  { label: 'Tous types', value: '' },
-  { label: 'Radiographie', value: 'RADIOGRAPHIE' },
-  { label: 'Échographie', value: 'ÉCHOGRAPHIE' },
+  { label: 'Toutes modalités', value: '' },
+  { label: 'Radiologie', value: 'RADIOLOGIE' },
+  { label: 'Échographie', value: 'ECHOGRAPHIE' },
   { label: 'Scanner', value: 'SCANNER' },
   { label: 'IRM', value: 'IRM' },
-  { label: 'ECG', value: 'ECG' },
-  { label: 'Autre', value: 'AUTRE' },
 ]
 
 const statutOptions = [
   { label: 'Tous statuts', value: '' },
-  { label: 'En attente', value: 'pending' },
-  { label: 'Compte rendu disponible', value: 'completed' },
-  { label: 'Annulé', value: 'cancelled' },
+  { label: 'Demandé', value: 'DEMANDE' },
+  { label: 'En cours', value: 'EN_COURS' },
+  {
+    label: 'Compte rendu disponible',
+    value: 'RESULTAT_DISPONIBLE',
+  },
+  { label: 'Annulé', value: 'ANNULE' },
 ]
 
 watch(
@@ -51,7 +53,10 @@ watch(
     form.statut = value.statut || ''
     form.type = value.type || ''
   },
-  { immediate: true, deep: true },
+  {
+    immediate: true,
+    deep: true,
+  },
 )
 
 function submit() {
@@ -67,22 +72,44 @@ function reset() {
 </script>
 
 <template>
-  <form class="grid gap-3 lg:grid-cols-5" @submit.prevent="submit">
+  <form
+    class="grid gap-3 lg:grid-cols-5"
+    @submit.prevent="submit"
+  >
     <input
       v-model="form.q"
       type="search"
-      placeholder="Rechercher patient, fiche, examen, conclusion..."
+      placeholder="Rechercher patient, examen, indication..."
       class="min-h-11 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm his-focus lg:col-span-2"
     />
 
-    <BaseSelect v-model="form.type" :options="typeOptions" placeholder="Type" />
+    <BaseSelect
+      v-model="form.type"
+      :options="typeOptions"
+      placeholder="Modalité"
+    />
 
-    <BaseSelect v-model="form.statut" :options="statutOptions" placeholder="Statut" />
+    <BaseSelect
+      v-model="form.statut"
+      :options="statutOptions"
+      placeholder="Statut"
+    />
 
     <div class="flex gap-2">
-      <BaseButton type="submit" :loading="loading"> Rechercher </BaseButton>
+      <BaseButton
+        type="submit"
+        :loading="loading"
+      >
+        Rechercher
+      </BaseButton>
 
-      <BaseButton type="button" variant="secondary" @click="reset"> Réinitialiser </BaseButton>
+      <BaseButton
+        type="button"
+        variant="secondary"
+        @click="reset"
+      >
+        Réinitialiser
+      </BaseButton>
     </div>
   </form>
 </template>

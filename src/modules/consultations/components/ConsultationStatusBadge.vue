@@ -1,20 +1,54 @@
 <script setup>
 import { computed } from 'vue'
+
 import BaseBadge from '@/shared/ui/base/BaseBadge.vue'
 
 const props = defineProps({
   statut: {
     type: String,
-    default: 'active',
+    default: 'EN_COURS',
   },
 })
 
-const normalized = computed(() => String(props.statut || '').toLowerCase())
+const normalized = computed(() =>
+  String(props.statut || '')
+    .trim()
+    .toLowerCase(),
+)
 
 const variant = computed(() => {
-  if (['active', 'en_cours', 'en cours'].includes(normalized.value)) return 'primary'
-  if (['terminee', 'terminée', 'completed'].includes(normalized.value)) return 'success'
-  if (['annulee', 'annulée', 'cancelled'].includes(normalized.value)) return 'danger'
+  if (
+    [
+      'active',
+      'en_cours',
+      'en cours',
+    ].includes(normalized.value)
+  ) {
+    return 'primary'
+  }
+
+  if (
+    [
+      'cloturee',
+      'clôturée',
+      'terminee',
+      'terminée',
+      'completed',
+    ].includes(normalized.value)
+  ) {
+    return 'success'
+  }
+
+  if (
+    [
+      'annulee',
+      'annulée',
+      'cancelled',
+    ].includes(normalized.value)
+  ) {
+    return 'danger'
+  }
+
   return 'neutral'
 })
 
@@ -23,15 +57,20 @@ const label = computed(() => {
     active: 'En cours',
     en_cours: 'En cours',
     'en cours': 'En cours',
-    terminee: 'Terminée',
-    terminée: 'Terminée',
-    completed: 'Terminée',
+    cloturee: 'Clôturée',
+    clôturée: 'Clôturée',
+    terminee: 'Clôturée',
+    terminée: 'Clôturée',
+    completed: 'Clôturée',
     annulee: 'Annulée',
     annulée: 'Annulée',
     cancelled: 'Annulée',
   }
 
-  return labels[normalized.value] || 'Non défini'
+  return (
+    labels[normalized.value] ||
+    'Non défini'
+  )
 })
 </script>
 

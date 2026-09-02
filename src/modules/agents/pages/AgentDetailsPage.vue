@@ -35,7 +35,7 @@ onMounted(async () => {
       <div>
         <h1 class="his-page-title">Détail agent CAC</h1>
 
-        <p class="his-page-subtitle">Informations complètes de l’agent CAC.</p>
+        <p class="his-page-subtitle">Informations issues du contrat de l’API externe des agents CAC.</p>
       </div>
 
       <RouterLink to="/agents">

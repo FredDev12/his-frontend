@@ -1,152 +1,78 @@
 import { defineStore } from 'pinia'
 import { agentsService } from '@/modules/agents/services/agents.service'
 
-function pick(obj, keys, fallback = '') {
-  for (const key of keys) {
-    if (obj && obj[key] !== undefined && obj[key] !== null && obj[key] !== '') {
-      return obj[key]
-    }
-  }
-
-  return fallback
+function text(value) {
+  return value === undefined || value === null ? '' : String(value)
 }
 
 function parseChildren(value) {
-  if (!value) return []
-
-  if (Array.isArray(value)) {
-    return value
-      .map((child) => ({
-        nom: pick(child, ['nom', 'name'], ''),
-        sexe: pick(child, ['sexe', 'gender'], ''),
-      }))
-      .filter((child) => child.nom || child.sexe)
-  }
-
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value)
-      return parseChildren(parsed)
-    } catch {
-      return value
-        .split(',')
-        .map((name) => ({
-          nom: name.trim(),
-          sexe: '',
-        }))
-        .filter((child) => child.nom)
-    }
-  }
-
-  return []
+  return text(value)
+    .split(/[,;\n]+/)
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((nom) => ({ nom }))
 }
 
-function formatSexe(value) {
-  const sexe = String(value || '').toUpperCase()
-
-  if (sexe === 'M') return 'Masculin'
-  if (sexe === 'F') return 'Féminin'
-
-  return value || ''
-}
-
-function normalizeAgent(item) {
-  if (!item) return null
-
-  const raw = item
-
-  const cacId = pick(raw, ['cac_id_co', 'cacId', 'cac_id', 'matricule'], '')
-  const id = pick(raw, ['id', '_id', 'agent_id', 'agentId'], cacId)
+export function normalizeAgent(item) {
+  if (!item || typeof item !== 'object') return null
 
   return {
-    raw,
-
-    id,
-    cac_id_co: cacId,
-
-    nom_post: pick(raw, ['nom_post', 'nomPost', 'nom', 'name'], ''),
-    prenom: pick(raw, ['prenom', 'prénom', 'firstName'], ''),
-
-    sexe: pick(raw, ['sexe', 'gender'], ''),
-    grand: pick(raw, ['grand'], ''),
-    fonction: pick(raw, ['fonction', 'poste', 'role'], ''),
-    nationalite: pick(raw, ['nationalite', 'nationalité'], ''),
-    site: pick(raw, ['site', 'localite', 'localité'], ''),
-    adresse: pick(raw, ['adresse', 'address'], ''),
-    telephone: pick(raw, ['telephone', 'téléphone', 'phone'], ''),
-
-    statut_marital: pick(raw, ['statut_marital', 'statutMarital'], ''),
-    nom_conjoint: pick(raw, ['nom_conjoint', 'nomConjoint'], ''),
-    nbre_enfa: pick(raw, ['nbre_enfa', 'nbreEnfa', 'nombre_enfants'], ''),
-    nom_enfant: pick(raw, ['nom_enfant', 'nomEnfant'], ''),
-    enfants: parseChildren(pick(raw, ['nom_enfant', 'nomEnfant'], '')).map((child) => ({
-      ...child,
-      sexe_label: formatSexe(child.sexe),
-    })),
-
-    date_de_naissance: pick(raw, ['date_de_naissance', 'dateNaissance', 'birthDate'], ''),
-    parents: pick(raw, ['parents'], ''),
-    statutparents: pick(raw, ['statutparents', 'statut_parents'], ''),
+    raw: item,
+    id: text(item.cac_id_co),
+    cac_id_co: text(item.cac_id_co),
+    nom_post: text(item.nom_post),
+    prenom: text(item.prenom),
+    sexe: text(item.sexe),
+    grand: text(item.grand),
+    fonction: text(item.fonction),
+    nationalite: text(item.nationalite),
+    site: text(item.site),
+    adresse: text(item.adresse),
+    statut_marital: text(item.statut_marital),
+    nom_conjoint: text(item.nom_conjoint),
+    nbre_enfa: text(item.nbre_enfa),
+    nom_enfant: text(item.nom_enfant),
+    enfants: parseChildren(item.nom_enfant),
+    telephone: text(item.telephone),
+    date_de_naissance: text(item.date_de_naissance),
+    parents: text(item.parents),
+    statutparents: text(item.statutparents),
   }
 }
 
-function normalizeListResponse(payload) {
-  const rawItems =
-    payload?.data ||
-    payload?.agents ||
-    payload?.items ||
-    payload?.results ||
-    payload?.resultats ||
-    []
-
-  const items = Array.isArray(rawItems) ? rawItems.map(normalizeAgent).filter(Boolean) : []
-
-  const pagination = payload?.pagination || payload?.meta || {}
-
-  const page = Number(payload?.page || pagination.page || 1)
-
-  const limite = Number(
-    payload?.limit || payload?.limite || pagination.limit || pagination.limite || 100,
-  )
-
-  const total = Number(payload?.total || payload?.count || pagination.total || items.length || 0)
-
-  const totalPages = Number(
-    payload?.pages ||
-      payload?.totalPages ||
-      pagination.pages ||
-      pagination.totalPages ||
-      Math.ceil(total / limite) ||
-      1,
-  )
+export function normalizeListResponse(payload) {
+  const rawItems = Array.isArray(payload?.data) ? payload.data : []
+  const items = rawItems.map(normalizeAgent).filter(Boolean)
 
   return {
     items,
-    total,
-    page,
-    limite,
-    hasNext: page < totalPages,
-    hasPrev: page > 1,
+    total: Number(payload?.total ?? items.length),
+    page: Number(payload?.page ?? 1),
+    limite: Number(payload?.limit ?? 100),
+    hasNext: Boolean(payload?.hasNext),
+    hasPrev: Boolean(payload?.hasPrev),
   }
 }
 
-function normalizeSingleResponse(payload) {
-  const agent = payload?.agent || payload?.data || payload?.result || payload
-
-  return normalizeAgent(agent)
+export function normalizeSingleResponse(payload) {
+  return normalizeAgent(payload?.item ?? payload)
 }
 
 function normalizeStats(payload) {
-  const data = payload?.data || payload?.statistiques || payload?.stats || payload || {}
+  const data = payload || {}
 
   return {
     raw: data,
-    total: Number(data.total || data.totalAgents || data.count || 0) || 0,
-    par_sexe: data.par_sexe || data.sexe || data.bySexe || {},
-    par_site: data.par_site || data.site || data.bySite || {},
-    par_fonction: data.par_fonction || data.fonction || data.byFonction || {},
-    par_statut: data.par_statut || data.statut || data.byStatut || {},
+    total: Number(data.total || 0),
+    par_sexe: data.par_sexe || {},
+    par_site: data.par_site || {},
+    par_fonction: data.par_fonction || {},
+    par_statut: data.par_statut || {},
   }
+}
+
+function errorMessage(error, fallback) {
+  return error?.response?.data?.message || error?.response?.data?.error || fallback
 }
 
 export const useAgentsStore = defineStore('agents', {
@@ -159,7 +85,6 @@ export const useAgentsStore = defineStore('agents', {
     loadingDetails: false,
     loadingStats: false,
     searching: false,
-
     error: '',
 
     pagination: {
@@ -181,6 +106,19 @@ export const useAgentsStore = defineStore('agents', {
   }),
 
   actions: {
+    applyList(payload) {
+      const normalized = normalizeListResponse(payload)
+      this.agents = normalized.items
+      this.pagination = {
+        page: normalized.page,
+        limite: normalized.limite,
+        total: normalized.total,
+        hasNext: normalized.hasNext,
+        hasPrev: normalized.hasPrev,
+      }
+      return normalized
+    },
+
     async fetchAgents(params = {}) {
       this.loading = true
       this.error = ''
@@ -190,25 +128,9 @@ export const useAgentsStore = defineStore('agents', {
           page: params.page || this.pagination.page,
           limit: params.limit || params.limite || this.pagination.limite,
         })
-
-        const normalized = normalizeListResponse(payload)
-
-        this.agents = normalized.items
-        this.pagination = {
-          page: normalized.page,
-          limite: normalized.limite,
-          total: normalized.total,
-          hasNext: normalized.hasNext,
-          hasPrev: normalized.hasPrev,
-        }
-
-        return normalized
+        return this.applyList(payload)
       } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Impossible de charger les agents CAC.'
-
+        this.error = errorMessage(error, 'Impossible de charger les agents CAC.')
         throw error
       } finally {
         this.loading = false
@@ -229,24 +151,23 @@ export const useAgentsStore = defineStore('agents', {
       }
 
       try {
-        const hasFonction = String(this.filters.fonction || '').trim()
-
-        const hasAdvancedFilter = [
+        const hasFonction = String(this.filters.fonction).trim()
+        const hasExternalSearchFilter = [
           this.filters.cac_id_co,
           this.filters.nom_post,
           this.filters.prenom,
           this.filters.site,
           this.filters.telephone,
-        ].some((value) => String(value || '').trim())
+        ].some((value) => String(value).trim())
 
         let payload
 
-        if (hasFonction && !hasAdvancedFilter) {
+        if (hasFonction && !hasExternalSearchFilter) {
           payload = await agentsService.getByFonction(this.filters.fonction, {
             page: 1,
             limit: this.pagination.limite,
           })
-        } else if (hasAdvancedFilter) {
+        } else if (hasExternalSearchFilter) {
           payload = await agentsService.search({
             cac_id_co: this.filters.cac_id_co,
             nom_post: this.filters.nom_post,
@@ -257,45 +178,26 @@ export const useAgentsStore = defineStore('agents', {
             limit: this.pagination.limite,
           })
         } else {
-          payload = await agentsService.list({
-            page: 1,
-            limit: this.pagination.limite,
-          })
+          payload = await agentsService.list({ page: 1, limit: this.pagination.limite })
         }
 
-        const normalized = normalizeListResponse(payload)
+        const normalized = this.applyList(payload)
 
-        let items = normalized.items
-
-        if (hasFonction && hasAdvancedFilter) {
-          const fonction = String(this.filters.fonction).toLowerCase().trim()
-
-          items = items.filter((agent) =>
-            String(agent.fonction || '')
-              .toLowerCase()
-              .includes(fonction),
+        if (hasFonction && hasExternalSearchFilter) {
+          const fonction = hasFonction.toLowerCase()
+          this.agents = this.agents.filter((agent) =>
+            agent.fonction.toLowerCase().includes(fonction),
           )
-        }
-
-        this.agents = items
-        this.pagination = {
-          page: normalized.page,
-          limite: normalized.limite,
-          total: hasFonction && hasAdvancedFilter ? items.length : normalized.total,
-          hasNext: hasFonction && hasAdvancedFilter ? false : normalized.hasNext,
-          hasPrev: normalized.hasPrev,
+          this.pagination.total = this.agents.length
+          this.pagination.hasNext = false
         }
 
         return {
           ...normalized,
-          items,
+          items: this.agents,
         }
       } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Recherche agent impossible.'
-
+        this.error = errorMessage(error, 'Recherche agent impossible.')
         throw error
       } finally {
         this.searching = false
@@ -309,19 +211,14 @@ export const useAgentsStore = defineStore('agents', {
 
       try {
         const value = String(idOrCac || '').trim()
-        const isNumeric = /^\d+$/.test(value)
-
-        const payload = isNumeric
+        const payload = /^\d+$/.test(value)
           ? await agentsService.getByNumericId(value)
           : await agentsService.getByCacId(value)
 
         this.selectedAgent = normalizeSingleResponse(payload)
-
         return this.selectedAgent
       } catch (error) {
-        this.error =
-          error.response?.data?.message || error.response?.data?.error || 'Agent CAC introuvable.'
-
+        this.error = errorMessage(error, 'Agent CAC introuvable.')
         throw error
       } finally {
         this.loadingDetails = false
@@ -337,25 +234,9 @@ export const useAgentsStore = defineStore('agents', {
           page: params.page || 1,
           limit: params.limit || params.limite || this.pagination.limite,
         })
-
-        const normalized = normalizeListResponse(payload)
-
-        this.agents = normalized.items
-        this.pagination = {
-          page: normalized.page,
-          limite: normalized.limite,
-          total: normalized.total,
-          hasNext: normalized.hasNext,
-          hasPrev: normalized.hasPrev,
-        }
-
-        return normalized
+        return this.applyList(payload)
       } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Filtre par site impossible.'
-
+        this.error = errorMessage(error, 'Filtre par site impossible.')
         throw error
       } finally {
         this.loading = false
@@ -371,25 +252,9 @@ export const useAgentsStore = defineStore('agents', {
           page: params.page || 1,
           limit: params.limit || params.limite || this.pagination.limite,
         })
-
-        const normalized = normalizeListResponse(payload)
-
-        this.agents = normalized.items
-        this.pagination = {
-          page: normalized.page,
-          limite: normalized.limite,
-          total: normalized.total,
-          hasNext: normalized.hasNext,
-          hasPrev: normalized.hasPrev,
-        }
-
-        return normalized
+        return this.applyList(payload)
       } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Filtre par fonction impossible.'
-
+        this.error = errorMessage(error, 'Filtre par fonction impossible.')
         throw error
       } finally {
         this.loading = false
@@ -403,14 +268,9 @@ export const useAgentsStore = defineStore('agents', {
       try {
         const payload = await agentsService.statistiques()
         this.stats = normalizeStats(payload)
-
         return this.stats
       } catch (error) {
-        this.error =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Impossible de charger les statistiques agents.'
-
+        this.error = errorMessage(error, 'Impossible de charger les statistiques agents.')
         throw error
       } finally {
         this.loadingStats = false

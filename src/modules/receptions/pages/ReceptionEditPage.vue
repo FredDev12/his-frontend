@@ -1,78 +1,43 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 
-import ReceptionForm from '@/modules/receptions/components/ReceptionForm.vue'
-import { useReceptionsStore } from '@/modules/receptions/stores/receptions.store'
-import { useToastStore } from '@/shared/stores/toast.store'
+import BaseButton from '@/shared/ui/base/BaseButton.vue'
+import BaseCard from '@/shared/ui/base/BaseCard.vue'
 
 const route = useRoute()
-const router = useRouter()
-const store = useReceptionsStore()
-const toast = useToastStore()
-
-const serverError = ref('')
-
 const receptionId = computed(() => route.params.id)
-const reception = computed(() => store.selectedReception)
-
-onMounted(async () => {
-  try {
-    await store.fetchReceptionById(receptionId.value)
-  } catch {
-    router.push('/receptions')
-  }
-})
-
-async function submit(payload) {
-  serverError.value = ''
-
-  try {
-    await store.updateReception(receptionId.value, payload)
-    router.push(`/receptions/${receptionId.value}`)
-  } catch (error) {
-    console.error('[Réceptions] Erreur modification:', error)
-
-    serverError.value =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      'Modification de la réception impossible.'
-
-    toast.error(serverError.value)
-  }
-}
-
-function cancel() {
-  router.push(`/receptions/${receptionId.value}`)
-}
 </script>
 
 <template>
   <div class="space-y-6">
     <header>
-      <h1 class="his-page-title">Modifier réception</h1>
-
-      <p class="his-page-subtitle">Modification contrôlée des informations d’admission.</p>
+      <h1 class="his-page-title">Modification indisponible</h1>
+      <p class="his-page-subtitle">
+        Une réception admise ou annulée ne peut pas être réécrite depuis un formulaire général.
+      </p>
     </header>
 
-    <div
-      v-if="serverError"
-      class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+    <BaseCard
+      title="Réception protégée"
+      subtitle="Les données cliniques, financières et les identifiants sont immuables depuis ce module."
     >
-      {{ serverError }}
-    </div>
+      <div class="space-y-4 text-sm leading-6 text-slate-600">
+        <p>
+          L’identité permanente du patient doit être corrigée depuis la fiche patient, avec permission
+          dédiée et audit. Le paiement est géré par la transaction financière. Le motif, la priorité et
+          le service clinique sont renseignés au triage.
+        </p>
 
-    <div v-if="store.loading" class="his-card p-8 text-center text-sm text-slate-500">
-      Chargement de la réception...
-    </div>
+        <p>
+          Pour corriger le statut administratif d’une réception erronée, utilisez l’action
+          <strong>Annuler</strong> depuis la liste, avec confirmation et traçabilité.
+        </p>
 
-    <ReceptionForm
-      v-else-if="reception"
-      :initial-value="reception"
-      submit-label="Enregistrer modifications"
-      :loading="store.saving"
-      @submit="submit"
-      @cancel="cancel"
-    />
+        <RouterLink :to="`/receptions/${receptionId}`">
+          <BaseButton>Retour au détail de la réception</BaseButton>
+        </RouterLink>
+      </div>
+    </BaseCard>
   </div>
 </template>

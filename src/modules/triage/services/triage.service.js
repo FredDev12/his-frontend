@@ -13,14 +13,49 @@ function cleanParams(params = {}) {
 }
 
 export const triageService = {
-  async list(params = {}) {
-    const limit = params.limit || params.limite || 10
-
-    const response = await api.get('/triage', {
+  async getDashboard(params = {}) {
+    const response = await api.get('/triages/dashboard', {
       params: cleanParams({
+        timezoneOffsetMinutes:
+          params.timezoneOffsetMinutes,
+      }),
+    })
+
+    return unwrapResponse(response)
+  },
+
+  async getQueue(params = {}) {
+    const response = await api.get('/triages/queue', {
+      params: cleanParams({
+        q: params.q,
         page: params.page || 1,
-        limit,
-        limite: limit,
+        limit: params.limit || 20,
+      }),
+    })
+
+    return unwrapResponse(response)
+  },
+
+  async getQueueItem(episodeId) {
+    const response = await api.get(`/triages/queue/${episodeId}`)
+    return unwrapResponse(response)
+  },
+
+  async getAvailableServices() {
+    const response = await api.get('/triages/reference/services')
+    return unwrapResponse(response)
+  },
+
+  async list(params = {}) {
+    const response = await api.get('/triages', {
+      params: cleanParams({
+        q: params.q,
+        episodeId: params.episodeId,
+        patientId: params.patientId,
+        priority: params.priority,
+        status: params.status,
+        page: params.page || 1,
+        limit: params.limit || 10,
       }),
     })
 
@@ -28,27 +63,29 @@ export const triageService = {
   },
 
   async getById(id) {
-    const response = await api.get(`/triage/${id}`)
+    const response = await api.get(`/triages/${id}`)
     return unwrapResponse(response)
   },
 
   async create(payload) {
-    const response = await api.post('/triage', payload)
+    const response = await api.post('/triages', payload)
     return unwrapResponse(response)
   },
 
-  async update(id, payload) {
-    const response = await api.put(`/triage/${id}`, payload)
+  async getReevaluations(triageId) {
+    const response = await api.get(
+      `/triages/${triageId}/reevaluations`,
+    )
+
     return unwrapResponse(response)
   },
 
-  async updateStatus(id, payload) {
-    const response = await api.post(`/triage/${id}/status`, payload)
-    return unwrapResponse(response)
-  },
+  async createReevaluation(triageId, payload) {
+    const response = await api.post(
+      `/triages/${triageId}/reevaluations`,
+      payload,
+    )
 
-  async remove(id) {
-    const response = await api.delete(`/triage/${id}`)
     return unwrapResponse(response)
   },
 }

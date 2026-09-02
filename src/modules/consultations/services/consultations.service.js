@@ -7,14 +7,46 @@ function unwrapResponse(response) {
 function cleanParams(params = {}) {
   return Object.fromEntries(
     Object.entries(params).filter(
-      ([, value]) => value !== undefined && value !== null && value !== '',
+      ([, value]) =>
+        value !== undefined &&
+        value !== null &&
+        value !== '',
     ),
   )
 }
 
 export const consultationsService = {
+  async queue(params = {}) {
+    const response = await api.get(
+      '/consultations/queue',
+      {
+        params: cleanParams({
+          q: params.q,
+          priority: params.priority,
+          serviceId: params.serviceId,
+          page: params.page || 1,
+          limit: params.limit || 20,
+        }),
+      },
+    )
+
+    return unwrapResponse(response)
+  },
+
+  async start(payload) {
+    const response = await api.post(
+      '/consultations/start',
+      payload,
+    )
+
+    return unwrapResponse(response)
+  },
+
   async list(params = {}) {
-    const limit = params.limit || params.limite || 10
+    const limit =
+      params.limit ||
+      params.limite ||
+      10
 
     const response = await api.get('/consultations', {
       params: cleanParams({
@@ -28,22 +60,51 @@ export const consultationsService = {
   },
 
   async getById(id) {
-    const response = await api.get(`/consultations/${id}`)
+    const response = await api.get(
+      `/consultations/${id}`,
+    )
+
     return unwrapResponse(response)
   },
 
-  async create(payload) {
-    const response = await api.post('/consultations', payload)
+  async updateClinical(id, payload) {
+    const response = await api.patch(
+      `/consultations/${id}/clinical`,
+      payload,
+    )
+
     return unwrapResponse(response)
   },
 
-  async update(id, payload) {
-    const response = await api.put(`/consultations/${id}`, payload)
+  async clinicalHistory(id, params = {}) {
+    const response = await api.get(
+      `/consultations/${id}/clinical-history`,
+      {
+        params: cleanParams({
+          page: params.page || 1,
+          limit: params.limit || 20,
+        }),
+      },
+    )
+
     return unwrapResponse(response)
   },
 
-  async remove(id) {
-    const response = await api.delete(`/consultations/${id}`)
+  async requestExamen(id, payload) {
+    const response = await api.post(
+      `/consultations/${id}/examens/batch`,
+      payload,
+    )
+
+    return unwrapResponse(response)
+  },
+
+  async createPrescription(id, payload) {
+    const response = await api.post(
+      `/consultations/${id}/prescriptions`,
+      payload,
+    )
+
     return unwrapResponse(response)
   },
 }

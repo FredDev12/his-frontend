@@ -24,6 +24,10 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 defineEmits(['update:modelValue'])
@@ -41,8 +45,12 @@ defineEmits(['update:modelValue'])
       :rows="rows"
       :placeholder="placeholder"
       :required="required"
+      :disabled="disabled"
       class="block w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 his-focus"
-      :class="error ? 'border-red-300 focus:ring-red-500' : 'border-slate-300'"
+      :class="[
+        error ? 'border-red-300 focus:ring-red-500' : 'border-slate-300',
+        disabled ? 'cursor-not-allowed bg-slate-100 text-slate-500' : '',
+      ]"
       @input="$emit('update:modelValue', $event.target.value)"
     />
 

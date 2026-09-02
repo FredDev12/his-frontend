@@ -1,6 +1,6 @@
-﻿<script setup>
-import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+<script setup>
+import { computed, onActivated, onMounted, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import BaseCard from '@/shared/ui/base/BaseCard.vue'
@@ -8,36 +8,59 @@ import ConfirmDialog from '@/shared/ui/overlay/ConfirmDialog.vue'
 
 import ReceptionSearchBar from '@/modules/receptions/components/ReceptionSearchBar.vue'
 import ReceptionTable from '@/modules/receptions/components/ReceptionTable.vue'
-import ReceptionPaymentDialog from '@/modules/receptions/components/ReceptionPaymentDialog.vue'
 
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useReceptionsStore } from '@/modules/receptions/stores/receptions.store'
 import { useToastStore } from '@/shared/stores/toast.store'
 
+const router = useRouter()
 const auth = useAuthStore()
 const store = useReceptionsStore()
 const toast = useToastStore()
 
-const receptionToPay = ref(null)
-const receptionToRemove = ref(null)
+const receptionToCancel = ref(null)
+const cancellationReason = ref('')
 
-const paymentOpen = ref(false)
-const confirmRemoveOpen = ref(false)
+const confirmCancelOpen = ref(false)
 
 const totalLabel = computed(() => {
-  if (!store.pagination.total) return '0 réception'
-  return `${store.pagination.total} réception(s)`
+  const total = Number(store.pagination.total || 0)
+  return total <= 1 ? `${total} réception` : `${total} réceptions`
 })
+
+const cancellationPatientName = computed(() => {
+  const reception = receptionToCancel.value
+  if (!reception) return ''
+
+  return [reception.nom, reception.postnom, reception.prenom]
+    .filter(Boolean)
+    .join(' ')
+    .trim()
+})
+
+const cancellationPatientId = computed(
+  () =>
+    receptionToCancel.value?.patientCode ||
+    receptionToCancel.value?.numero_patient ||
+    'Non renseigné',
+)
 
 onMounted(() => {
   loadReceptions({ page: 1 })
 })
 
+onActivated(() => {
+  loadReceptions({
+    page: store.pagination.page || 1,
+    limite: store.pagination.limite,
+  })
+})
+
 async function loadReceptions(params = {}) {
   try {
     await store.fetchReceptions({
-      page: params.page || 1,
-      limite: params.limite || store.pagination.limite,
+      page: params.page ?? 1,
+      limite: params.limite ?? store.pagination.limite,
     })
   } catch (error) {
     console.error('[Réceptions] Erreur chargement:', error)
@@ -46,10 +69,12 @@ async function loadReceptions(params = {}) {
 }
 
 async function goToPage(page) {
-  await loadReceptions({
-    page,
-    limite: store.pagination.limite,
-  })
+  try {
+    await store.changePage(page)
+  } catch (error) {
+    console.error('[Réceptions] Erreur pagination:', error)
+    toast.error(error.response?.data?.message || 'Impossible de changer de page.')
+  }
 }
 
 async function search(filters) {
@@ -57,61 +82,47 @@ async function search(filters) {
     await store.searchReceptions(filters)
   } catch (error) {
     console.error('[Réceptions] Erreur recherche:', error)
-    toast.error(error.response?.data?.message || 'Recherche impossible.')
+    toast.error(error.response?.data?.message || 'La recherche a échoué.')
   }
 }
 
 async function resetSearch() {
-  store.filters = {
-    q: '',
-    urgence: '',
-    service: '',
-    paye: '',
-  }
-
-  await loadReceptions({ page: 1 })
-}
-
-function askPay(reception) {
-  receptionToPay.value = reception
-  paymentOpen.value = true
-}
-
-function closePayment() {
-  receptionToPay.value = null
-  paymentOpen.value = false
-}
-
-async function confirmPayment(payload) {
-  if (!receptionToPay.value?.id) return
-
   try {
-    await store.validatePayment(receptionToPay.value.id, payload)
-    closePayment()
-    await loadReceptions({ page: store.pagination.page })
+    await store.resetSearch()
   } catch (error) {
-    console.error('[Réceptions] Paiement impossible:', error)
+    console.error('[Réceptions] Erreur réinitialisation:', error)
+    toast.error(error.response?.data?.message || 'Impossible de réinitialiser les filtres.')
   }
 }
 
-function askRemove(reception) {
-  receptionToRemove.value = reception
-  confirmRemoveOpen.value = true
+function viewReception(reception) {
+  if (!reception?.id) return
+  router.push({ name: 'receptions.details', params: { id: reception.id } })
 }
 
-function closeRemove() {
-  receptionToRemove.value = null
-  confirmRemoveOpen.value = false
+function askCancel(reception) {
+  receptionToCancel.value = reception
+  cancellationReason.value = ''
+  confirmCancelOpen.value = true
 }
 
-async function confirmRemove() {
-  if (!receptionToRemove.value?.id) return
+function closeCancel() {
+  receptionToCancel.value = null
+  cancellationReason.value = ''
+  confirmCancelOpen.value = false
+}
+
+async function confirmCancel() {
+  if (!receptionToCancel.value?.id || store.deleting) return
 
   try {
-    await store.removeReception(receptionToRemove.value.id)
-    closeRemove()
+    await store.removeReception(
+      receptionToCancel.value.id,
+      cancellationReason.value.trim(),
+    )
+    closeCancel()
   } catch (error) {
-    console.error('[Réceptions] Suppression impossible:', error)
+    console.error('[Réceptions] Annulation impossible:', error)
   }
 }
 </script>
@@ -123,12 +134,12 @@ async function confirmRemove() {
         <h1 class="his-page-title">Réception / Admissions</h1>
 
         <p class="his-page-subtitle">
-          Accueil patient, ouverture de fiche, orientation vers service et paiement initial.
+          Accueil administratif, vérification de la fiche patient, frais d’ouverture et transmission au triage.
         </p>
       </div>
 
       <RouterLink v-if="auth.hasPermission('reception:create')" to="/receptions/create">
-        <BaseButton> Nouvelle réception </BaseButton>
+        <BaseButton>Nouvelle réception</BaseButton>
       </RouterLink>
     </header>
 
@@ -144,6 +155,7 @@ async function confirmRemove() {
     <div
       v-if="store.error"
       class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      role="alert"
     >
       {{ store.error }}
     </div>
@@ -158,19 +170,25 @@ async function confirmRemove() {
       <ReceptionTable
         :receptions="store.receptions"
         :loading="store.loading"
-        :can-pay="auth.hasPermission('paiement:create')" @pay="askPay"
-        :can-remove="auth.hasPermission('reception:update')" @remove="askRemove"
+        :can-view="auth.hasPermission('reception:read')"
+        :can-remove="auth.hasPermission('reception:update')"
+        @view="viewReception"
+        @remove="askCancel"
       />
 
-      <div class="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+      <nav
+        class="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center"
+        aria-label="Pagination des réceptions"
+      >
         <p class="text-sm text-slate-500">
-          Page {{ store.pagination.page }} · Limite {{ store.pagination.limite }}
+          Page {{ store.pagination.page }} sur {{ store.pagination.totalPages }}
+          · {{ store.pagination.limite }} élément(s) par page
         </p>
 
         <div class="flex gap-2">
           <BaseButton
             variant="secondary"
-            :disabled="store.loading || store.pagination.page <= 1"
+            :disabled="store.loading || !store.pagination.hasPrev"
             @click="goToPage(store.pagination.page - 1)"
           >
             Précédent
@@ -184,27 +202,28 @@ async function confirmRemove() {
             Suivant
           </BaseButton>
         </div>
-      </div>
+      </nav>
     </BaseCard>
 
-    <ReceptionPaymentDialog
-      :open="paymentOpen"
-      :reception="receptionToPay"
-      :loading="store.paying"
-      @cancel="closePayment"
-      @confirm="confirmPayment"
-    />
 
     <ConfirmDialog
-      :open="confirmRemoveOpen"
-      title="Supprimer cette réception"
-      :message="`Cette action va supprimer ou désactiver la réception de ${receptionToRemove?.nom || ''} ${receptionToRemove?.prenom || ''}. Cette action doit être auditée côté serveur.`"
-      confirm-label="Supprimer réception"
-      cancel-label="Annuler"
-      variant="danger"
+      :open="confirmCancelOpen"
+      title="Annuler cette réception"
+      message="Cette action modifie définitivement le statut de la réception."
+      :patient-name="cancellationPatientName"
+      :patient-id="cancellationPatientId"
+      consequence="La réception et l’épisode seront annulés. Les pièces financières déjà créées resteront conservées pour l’audit comptable et tout remboursement suivra une procédure dédiée."
+      confirm-text="Confirmer l’annulation"
+      require-text="CONFIRMER"
+      v-model:reason="cancellationReason"
+      reason-required
+      reason-label="Motif d’annulation"
+      reason-placeholder="Exemple : admission créée sur la mauvaise fiche patient"
+      :min-reason-length="10"
       :loading="store.deleting"
-      @cancel="closeRemove"
-      @confirm="confirmRemove"
+      variant="warning"
+      @close="closeCancel"
+      @confirm="confirmCancel"
     />
   </div>
 </template>

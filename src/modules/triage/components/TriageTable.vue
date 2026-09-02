@@ -1,7 +1,8 @@
-﻿<script setup>
+<script setup>
 import { RouterLink } from 'vue-router'
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import TriagePriorityBadge from '@/modules/triage/components/TriagePriorityBadge.vue'
+import { patientDisplayName } from '@/shared/utils/patient'
 
 defineProps({
   canMarkUrgent: { type: Boolean, default: false },
@@ -19,7 +20,7 @@ defineProps({
 defineEmits(['remove', 'status'])
 
 function fullName(triage) {
-  return [triage.nom, triage.postnom, triage.prenom].filter(Boolean).join(' ') || '—'
+  return patientDisplayName(triage, triage?.numero_patient)
 }
 </script>
 

@@ -27,7 +27,7 @@ function dash(value) {
     </div>
 
     <template v-else-if="stats">
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <article class="his-card p-5">
           <p class="text-sm font-medium text-slate-500">Total agents</p>
           <p class="mt-3 text-3xl font-bold text-slate-950">
@@ -49,12 +49,6 @@ function dash(value) {
           </p>
         </article>
 
-        <article class="his-card p-5">
-          <p class="text-sm font-medium text-slate-500">Statuts</p>
-          <p class="mt-3 text-3xl font-bold text-slate-950">
-            {{ entries(stats.par_statut).length }}
-          </p>
-        </article>
       </div>
 
       <div class="grid gap-6 xl:grid-cols-2">
@@ -103,20 +97,6 @@ function dash(value) {
           </div>
         </section>
 
-        <section class="his-card p-5">
-          <h2 class="font-semibold text-slate-950">Répartition par statut</h2>
-
-          <div class="mt-4 space-y-3">
-            <div
-              v-for="[label, count] in entries(stats.par_statut)"
-              :key="label"
-              class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm"
-            >
-              <span class="font-medium text-slate-700">{{ dash(label) }}</span>
-              <span class="font-semibold text-slate-950">{{ count }}</span>
-            </div>
-          </div>
-        </section>
       </div>
     </template>
 

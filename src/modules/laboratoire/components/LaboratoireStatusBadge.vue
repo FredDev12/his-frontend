@@ -1,37 +1,33 @@
 <script setup>
 import { computed } from 'vue'
+
 import BaseBadge from '@/shared/ui/base/BaseBadge.vue'
 
 const props = defineProps({
   statut: {
     type: String,
-    default: 'pending',
+    default: 'DEMANDE',
   },
 })
 
-const normalized = computed(() => String(props.statut || '').toLowerCase())
+const normalized = computed(() =>
+  String(props.statut || '').toUpperCase(),
+)
 
 const variant = computed(() => {
-  if (['completed', 'termine', 'terminé', 'valide', 'validé'].includes(normalized.value))
-    return 'success'
-  if (['cancelled', 'annule', 'annulé'].includes(normalized.value)) return 'danger'
-  if (['pending', 'attente', 'en_attente'].includes(normalized.value)) return 'warning'
+  if (normalized.value === 'RESULTAT_DISPONIBLE') return 'success'
+  if (normalized.value === 'ANNULE') return 'danger'
+  if (normalized.value === 'EN_COURS') return 'primary'
+  if (normalized.value === 'DEMANDE') return 'warning'
   return 'neutral'
 })
 
 const label = computed(() => {
   const labels = {
-    completed: 'Résultat disponible',
-    termine: 'Résultat disponible',
-    terminé: 'Résultat disponible',
-    valide: 'Validé',
-    validé: 'Validé',
-    pending: 'En attente',
-    attente: 'En attente',
-    en_attente: 'En attente',
-    cancelled: 'Annulé',
-    annule: 'Annulé',
-    annulé: 'Annulé',
+    DEMANDE: 'Demandé',
+    EN_COURS: 'En cours',
+    RESULTAT_DISPONIBLE: 'Résultat disponible',
+    ANNULE: 'Annulé',
   }
 
   return labels[normalized.value] || 'Non défini'

@@ -1,11 +1,10 @@
-﻿<script setup>
+<script setup>
 import { RouterLink } from 'vue-router'
 
 import BaseButton from '@/shared/ui/base/BaseButton.vue'
 import LaboratoireStatusBadge from '@/modules/laboratoire/components/LaboratoireStatusBadge.vue'
 
 defineProps({
-  canRemove: { type: Boolean, default: false },
   examens: {
     type: Array,
     default: () => [],
@@ -16,10 +15,10 @@ defineProps({
   },
 })
 
-defineEmits(['remove'])
-
 function fullName(item) {
-  return [item.nom, item.postnom, item.prenom].filter(Boolean).join(' ') || '—'
+  return [item.nom, item.postnom, item.prenom]
+    .filter(Boolean)
+    .join(' ') || '—'
 }
 </script>
 
@@ -29,72 +28,63 @@ function fullName(item) {
       <table class="min-w-full divide-y divide-slate-200">
         <thead class="bg-slate-50">
           <tr>
-            <th
-              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Patient
             </th>
-            <th
-              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Examen
             </th>
-            <th
-              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
-              Date
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Indication
             </th>
-            <th
-              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
-              Résultat
-            </th>
-            <th
-              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Statut
             </th>
-            <th
-              class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
-              Actions
+            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Action
             </th>
           </tr>
         </thead>
 
         <tbody class="divide-y divide-slate-100">
           <tr v-if="loading">
-            <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">
+            <td colspan="5" class="px-4 py-8 text-center text-sm text-slate-500">
               Chargement des examens...
             </td>
           </tr>
 
           <tr v-else-if="examens.length === 0">
-            <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">
-              Aucun examen laboratoire trouvé.
+            <td colspan="5" class="px-4 py-8 text-center text-sm text-slate-500">
+              Aucun examen de laboratoire dans votre périmètre.
             </td>
           </tr>
 
-          <tr v-for="item in examens" v-else :key="item.id" class="hover:bg-slate-50">
+          <tr
+            v-for="item in examens"
+            v-else
+            :key="item.id"
+            class="hover:bg-slate-50"
+          >
             <td class="px-4 py-4">
               <p class="font-medium text-slate-950">
                 {{ fullName(item) }}
               </p>
               <p class="mt-1 text-xs text-slate-500">
-                Patient N° {{ item.numero_patient }} · Fiche {{ item.numero_fiche }}
+                {{ item.numero_patient }} · {{ item.episode_code }}
               </p>
             </td>
 
-            <td class="px-4 py-4 text-sm text-slate-600">
-              {{ item.examen_principal }}
+            <td class="px-4 py-4 text-sm text-slate-700">
+              <p class="font-medium text-slate-900">
+                {{ item.examen_principal }}
+              </p>
+              <p class="mt-1 text-xs text-slate-500">
+                {{ item.examen_code }}
+              </p>
             </td>
 
-            <td class="px-4 py-4 text-sm text-slate-600">
-              {{ item.date || '—' }}
-            </td>
-
-            <td class="px-4 py-4 text-sm text-slate-600">
-              {{ item.resultat || '—' }}
+            <td class="max-w-xs px-4 py-4 text-sm text-slate-600">
+              {{ item.indication_clinique || '—' }}
             </td>
 
             <td class="px-4 py-4">
@@ -102,18 +92,12 @@ function fullName(item) {
             </td>
 
             <td class="px-4 py-4">
-              <div class="flex justify-end gap-2">
+              <div class="flex justify-end">
                 <RouterLink :to="`/laboratoire/${item.id}`">
-                  <BaseButton variant="secondary" size="sm">Voir</BaseButton>
+                  <BaseButton variant="secondary" size="sm">
+                    Voir / traiter
+                  </BaseButton>
                 </RouterLink>
-
-                <RouterLink :to="`/laboratoire/${item.id}/edit`">
-                  <BaseButton variant="secondary" size="sm">Modifier</BaseButton>
-                </RouterLink>
-
-                <BaseButton variant="danger" size="sm" @click="$emit('remove', item)">
-                  Supprimer
-                </BaseButton>
               </div>
             </td>
           </tr>
@@ -122,7 +106,10 @@ function fullName(item) {
     </div>
 
     <div class="space-y-3 p-3 md:hidden">
-      <div v-if="loading" class="rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-500">
+      <div
+        v-if="loading"
+        class="rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-500"
+      >
         Chargement des examens...
       </div>
 
@@ -130,7 +117,7 @@ function fullName(item) {
         v-else-if="examens.length === 0"
         class="rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-500"
       >
-        Aucun examen laboratoire trouvé.
+        Aucun examen de laboratoire dans votre périmètre.
       </div>
 
       <article
@@ -144,7 +131,6 @@ function fullName(item) {
             <h3 class="font-semibold text-slate-950">
               {{ item.examen_principal }}
             </h3>
-
             <p class="mt-1 text-sm text-slate-500">
               {{ fullName(item) }}
             </p>
@@ -154,27 +140,17 @@ function fullName(item) {
         </div>
 
         <p class="mt-4 text-sm text-slate-600">
-          Résultat :
-          <span class="font-medium text-slate-900">
-            {{ item.resultat || '—' }}
-          </span>
+          {{ item.numero_patient }} · {{ item.episode_code }}
         </p>
 
-        <div class="mt-4 flex flex-wrap gap-2">
+        <div class="mt-4">
           <RouterLink :to="`/laboratoire/${item.id}`">
-            <BaseButton variant="secondary" size="sm">Voir</BaseButton>
+            <BaseButton variant="secondary" size="sm">
+              Voir / traiter
+            </BaseButton>
           </RouterLink>
-
-          <RouterLink :to="`/laboratoire/${item.id}/edit`">
-            <BaseButton variant="secondary" size="sm">Modifier</BaseButton>
-          </RouterLink>
-
-          <BaseButton variant="danger" size="sm" @click="$emit('remove', item)">
-            Supprimer
-          </BaseButton>
         </div>
       </article>
     </div>
   </div>
 </template>
-

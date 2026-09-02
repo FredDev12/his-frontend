@@ -1,4 +1,4 @@
-﻿import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 import AuthLayout from '@/app/layouts/AuthLayout.vue'
 import AppLayout from '@/app/layouts/AppLayout.vue'
@@ -7,6 +7,7 @@ import LoginPage from '@/modules/auth/pages/LoginPage.vue'
 //import ModulePlaceholderPage from '@/modules/_shared/pages/ModulePlaceholderPage.vue'
 
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { getDefaultRoute } from '@/shared/rbac/default-route'
 
 // route Dashboard
 import DashboardPage from '@/modules/dashboard/pages/DashboardPage.vue'
@@ -34,22 +35,16 @@ import TriageEditPage from '@/modules/triage/pages/TriageEditPage.vue'
 // route Consultations
 import ConsultationDashboardPage from '@/modules/consultations/pages/ConsultationDashboardPage.vue'
 import ConsultationsListPage from '@/modules/consultations/pages/ConsultationsListPage.vue'
-import ConsultationCreatePage from '@/modules/consultations/pages/ConsultationCreatePage.vue'
 import ConsultationDetailsPage from '@/modules/consultations/pages/ConsultationDetailsPage.vue'
-import ConsultationEditPage from '@/modules/consultations/pages/ConsultationEditPage.vue'
 
 // route Laboratoire
 import LaboratoireDashboardPage from '@/modules/laboratoire/pages/LaboratoireDashboardPage.vue'
 import LaboratoireListPage from '@/modules/laboratoire/pages/LaboratoireListPage.vue'
-import LaboratoireCreatePage from '@/modules/laboratoire/pages/LaboratoireCreatePage.vue'
 import LaboratoireDetailsPage from '@/modules/laboratoire/pages/LaboratoireDetailsPage.vue'
-import LaboratoireEditPage from '@/modules/laboratoire/pages/LaboratoireEditPage.vue'
 
 // route imagerie
 import ImagerieListPage from '@/modules/imagerie/pages/ImagerieListPage.vue'
-import ImagerieCreatePage from '@/modules/imagerie/pages/ImagerieCreatePage.vue'
 import ImagerieDetailsPage from '@/modules/imagerie/pages/ImagerieDetailsPage.vue'
-import ImagerieEditPage from '@/modules/imagerie/pages/ImagerieEditPage.vue'
 
 // route pharmacie
 import PharmacieDashboardPage from '@/modules/pharmacie/pages/PharmacieDashboardPage.vue'
@@ -131,14 +126,25 @@ import DmeDashboardPage from "@/modules/dme/pages/DmeDashboardPage.vue"
 import ClinicalDashboardPage from "@/modules/clinical-dashboard/pages/ClinicalDashboardPage.vue"
 import CommandCenterPage from "@/modules/clinical-dashboard/pages/CommandCenterPage.vue"
 
-import AdministrationPage from "@//modules/administration/pages/AdministrationPage.vue"
-import HospitalisationCreatePage from "@//modules/hospitalisation/pages/HospitalisationCreatePage.vue"
-import HospitalisationDashboardPage from "@//modules/hospitalisation/pages/HospitalisationDashboardPage.vue"
-import HospitalisationsListPage from "@//modules/hospitalisation/pages/HospitalisationsListPage.vue"
-import SortieCreatePage from "@//modules/sorties/pages/SortieCreatePage.vue"
-import SortiesListPage from "@//modules/sorties/pages/SortiesListPage.vue"
+import AdministrationPage from "@/modules/administration/pages/AdministrationPage.vue"
+import HospitalisationCreatePage from "@/modules/hospitalisation/pages/HospitalisationCreatePage.vue"
+import HospitalisationDashboardPage from "@/modules/hospitalisation/pages/HospitalisationDashboardPage.vue"
+import HospitalisationsListPage from "@/modules/hospitalisation/pages/HospitalisationsListPage.vue"
+import SortieCreatePage from "@/modules/sorties/pages/SortieCreatePage.vue"
+import SortiesListPage from "@/modules/sorties/pages/SortiesListPage.vue"
 
+
+import AccessDeniedPage from "@/modules/errors/pages/AccessDeniedPage.vue";
 const routes = [
+  {
+    path: "/acces-refuse",
+    name: "access.denied",
+    component: AccessDeniedPage,
+    meta: {
+      title: "Accès refusé",
+      public: false,
+    },
+  },
   {
     path: '/login',
     component: AuthLayout,
@@ -324,26 +330,36 @@ const routes = [
         name: 'consultations',
         component: ConsultationsListPage,
         meta: {
-          title: 'Consultations',
+          title: 'Historique des consultations',
           roles: ['admin', 'medecin'],
+          permission: 'consultation:read',
         },
       },
       {
         path: 'consultations/create',
         name: 'consultations.create',
-        component: ConsultationCreatePage,
+        redirect: {
+          name: 'consultations.dashboard',
+        },
         meta: {
-          title: 'Nouvelle consultation',
+          title: 'File médicale',
           roles: ['admin', 'medecin'],
+          permission: 'consultation:read',
         },
       },
       {
         path: 'consultations/:id/edit',
         name: 'consultations.edit',
-        component: ConsultationEditPage,
+        redirect: (to) => ({
+          name: 'consultations.details',
+          params: {
+            id: to.params.id,
+          },
+        }),
         meta: {
-          title: 'Modifier consultation',
+          title: 'Détail consultation',
           roles: ['admin', 'medecin'],
+          permission: 'consultation:read',
         },
       },
       {
@@ -353,6 +369,7 @@ const routes = [
         meta: {
           title: 'Détail consultation',
           roles: ['admin', 'medecin', 'infirmier'],
+          permission: 'consultation:read',
         },
       },
 
@@ -394,14 +411,14 @@ const routes = [
         },
       },
 
-      // route Laboratoire
+      // route Laboratoire — file opérationnelle alimentée par /examens
       {
         path: 'laboratoire/dashboard',
         name: 'laboratoire.dashboard',
         component: LaboratoireDashboardPage,
         meta: {
           title: 'Dashboard Laboratoire',
-          roles: ['admin', 'laborantin', 'medecin'],
+          roles: ['admin', 'laborantin'],
           permission: 'examen:read',
         },
       },
@@ -411,25 +428,8 @@ const routes = [
         component: LaboratoireListPage,
         meta: {
           title: 'Laboratoire',
-          roles: ['admin', 'medecin', 'laborantin'],
-        },
-      },
-      {
-        path: 'laboratoire/create',
-        name: 'laboratoire.create',
-        component: LaboratoireCreatePage,
-        meta: {
-          title: 'Nouvelle demande laboratoire',
-          roles: ['admin', 'medecin', 'laborantin'],
-        },
-      },
-      {
-        path: 'laboratoire/:id/edit',
-        name: 'laboratoire.edit',
-        component: LaboratoireEditPage,
-        meta: {
-          title: 'Modifier examen laboratoire',
           roles: ['admin', 'laborantin'],
+          permission: 'examen:read',
         },
       },
       {
@@ -438,7 +438,8 @@ const routes = [
         component: LaboratoireDetailsPage,
         meta: {
           title: 'Détail laboratoire',
-          roles: ['admin', 'medecin', 'laborantin'],
+          roles: ['admin', 'laborantin'],
+          permission: 'examen:read',
         },
       },
 
@@ -450,25 +451,8 @@ const routes = [
         component: ImagerieListPage,
         meta: {
           title: 'Imagerie',
-          roles: ['admin', 'medecin', 'radiologue'],
-        },
-      },
-      {
-        path: 'imagerie/create',
-        name: 'imagerie.create',
-        component: ImagerieCreatePage,
-        meta: {
-          title: 'Nouvelle demande imagerie',
-          roles: ['admin', 'medecin', 'radiologue'],
-        },
-      },
-      {
-        path: 'imagerie/:id/edit',
-        name: 'imagerie.edit',
-        component: ImagerieEditPage,
-        meta: {
-          title: 'Modifier examen imagerie',
-          roles: ['admin', 'radiologue'],
+          roles: ['admin', 'imagerie'],
+          permission: 'examen:read',
         },
       },
       {
@@ -477,7 +461,8 @@ const routes = [
         component: ImagerieDetailsPage,
         meta: {
           title: 'Détail imagerie',
-          roles: ['admin', 'medecin', 'radiologue'],
+          roles: ['admin', 'imagerie'],
+          permission: 'examen:read',
         },
       },
 
@@ -607,7 +592,6 @@ const routes = [
       },
 
       // route paiements / caisse
-      // route paiements / caisse
       {
         path: 'paiements/dashboard',
         name: 'paiements.dashboard',
@@ -688,7 +672,6 @@ const routes = [
 
       // route clinical dashboard
 
-// route clinical dashboard
 
 // route dme
       // route clinical dashboard
@@ -782,7 +765,8 @@ const routes = [
         component: AgentsListPage,
         meta: {
           title: 'Agents CAC',
-          roles: ['admin', 'secretaire', 'medecin'],
+          roles: ['admin', 'secretaire'],
+          permission: 'agent:read',
         },
       },
       {
@@ -791,7 +775,8 @@ const routes = [
         component: AgentsStatsPage,
         meta: {
           title: 'Statistiques agents CAC',
-          roles: ['admin', 'secretaire', 'medecin'],
+          roles: ['admin', 'secretaire'],
+          permission: 'agent:read',
         },
       },
       {
@@ -800,7 +785,8 @@ const routes = [
         component: AgentDetailsPage,
         meta: {
           title: 'Détail agent CAC',
-          roles: ['admin', 'secretaire', 'medecin'],
+          roles: ['admin', 'secretaire'],
+          permission: 'agent:read',
         },
       },
 
@@ -902,24 +888,12 @@ const routes = [
 
       // route clinical dashboard
 
-// route clinical dashboard
 
 // route dme
 
 // route sorties dashboard
-      {
-        path: 'sorties/dashboard',
-        name: 'sorties.dashboard',
-        component: SortieDashboardPage,
-        meta: {
-          title: 'Dashboard Sorties',
-          roles: ['admin', 'medecin', 'secretaire'],
-          permission: 'sortie:read',
-        },
-      },
       // route clinical dashboard
 
-// route clinical dashboard
 
 // route dme
 
@@ -1047,99 +1021,60 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  const auth = useAuthStore()
+  const auth = useAuthStore();
 
   if (!auth.initialized) {
-    await auth.initialize()
+    await auth.initialize();
   }
 
   if (to.meta.public) {
-    if (auth.isAuthenticated && to.name === 'login') {
-      if (to.path === "/dashboard") {
-      return true
+    if (auth.isAuthenticated && to.name === "login") {
+      return getDefaultRoute(auth);
     }
 
-    return "/dashboard"
-    }
-
-    return true
+    return true;
   }
 
   if (!auth.isAuthenticated) {
     return {
-      name: 'login',
+      name: "login",
       query: {
         redirect: to.fullPath,
       },
-    }
+    };
+  }
+  // Un utilisateur authentifié sans permission doit pouvoir voir la page
+  // d'accès refusé sans être redirigé en boucle.
+  if (to.path === "/acces-refuse") {
+    return true;
+  }
+
+  const defaultRoute = getDefaultRoute(auth);
+
+  // /dashboard est institutionnel. Les profils opérationnels sont dirigés
+  // vers leur espace métier.
+  if (to.path === "/dashboard" && defaultRoute !== "/dashboard") {
+    return defaultRoute;
   }
 
   const allowedRoles = Array.isArray(to.meta.roles)
     ? to.meta.roles.map((role) => String(role).toLowerCase())
-    : []
+    : [];
 
-  const userRole = auth.role ? String(auth.role).toLowerCase() : null
+  const userRole = auth.role ? String(auth.role).toLowerCase() : null;
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
-    if (to.path === "/dashboard") {
-      return true
-    }
-
-    return "/dashboard"
+    return defaultRoute;
   }
 
-  const requiredPermission = to.meta.permission
+  const requiredPermission = to.meta.permission;
 
   if (requiredPermission && !auth.hasPermission(requiredPermission)) {
-    if (to.path === "/dashboard") {
-      return true
-    }
-
-    return "/dashboard"
+    return defaultRoute;
   }
 
-  return true
-})
+  return true;
+});
 
 export default router
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
